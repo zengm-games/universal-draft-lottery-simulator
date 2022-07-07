@@ -116,17 +116,20 @@ export function App() {
 		if (direction === "bottom") {
 			setChances([...chances, chances.at(-1) ?? 1]);
 		} else {
-			setChances([...chances, chances[0] ?? 1]);
+			setChances([chances[0] ?? 1, ...chances]);
 		}
 		setPresetKey("custom");
 	};
 
 	return (
 		<>
-			<h1>Universal Draft Lottery Probability Calculator</h1>
+			<h1>Universal Draft Lottery Simulator</h1>
 			<p>
-				Calculate the odds of an NBA-like draft lottery with any number of teams
-				and any chances per team.
+				Calculate the odds and simulate an{" "}
+				<a href="https://en.wikipedia.org/wiki/NBA_draft_lottery">
+					NBA-like draft lottery
+				</a>{" "}
+				with any number of teams and any chances per team.
 			</p>
 
 			<form
@@ -190,9 +193,16 @@ export function App() {
 			) : null}
 
 			{tooSlow ? (
-				<div className="text-danger mt-2">
-					Computing lottery odds for so many teams and picks is too slow.
-				</div>
+				<>
+					<div className="text-danger mt-2 mb-1">
+						Computing lottery odds for so many teams and picks is too slow.
+					</div>
+					<div>
+						<button className="btn btn-danger" onClick={() => {}} role="button">
+							Do it anyway! (might freeze your browser)
+						</button>
+					</div>
+				</>
 			) : null}
 
 			<button
@@ -204,8 +214,13 @@ export function App() {
 			</button>
 
 			<div className="table-responsive mt-2">
-				<table className="table mb-0">
-					<thead className="text-center">
+				<table
+					className="table mb-0"
+					style={{
+						width: "unset",
+					}}
+				>
+					<thead className="text-end">
 						<tr>
 							<th />
 							<th>Chances</th>
@@ -218,7 +233,7 @@ export function App() {
 						{chances.map((chance, i) => (
 							<tr>
 								<td
-									className="p-0 align-middle"
+									className="py-0 align-middle"
 									style={{
 										width: 0,
 									}}
@@ -235,17 +250,32 @@ export function App() {
 									</button>
 								</td>
 								<td
-									className="text-left"
+									className="py-0 align-middle"
 									style={{
 										width: 0,
 									}}
 								>
-									{chance}
+									<input
+										className="form-control form-control-sm"
+										type="text"
+										value={chance}
+										onChange={(event) => {
+											const number = parseFloat(event.target.value);
+											if (!Number.isNaN(number)) {
+												setPresetKey("custom");
+												setChances(
+													chances.map((chance, j) =>
+														i === j ? number : chance,
+													),
+												);
+											}
+										}}
+									/>
 								</td>
 								{chances.map((chance, j) => {
-									let pct: any = formatPercent(probs[i][j]);
+									let pct = formatPercent(probs[i][j]);
 									if (tooSlow && pct !== undefined && j > 0) {
-										pct = <div className="text-center">?</div>;
+										pct = "?";
 									}
 									return <td>{pct}</td>;
 								})}
