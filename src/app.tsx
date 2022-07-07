@@ -54,7 +54,7 @@ const presets = [
 		key: "nhl2021",
 		title: "NHL 2021-present",
 		description:
-			"Weighted lottery for the top 2 picks, like the NHL since 2021",
+			"Weighted lottery for the top 2 picks, like the NHL since 2021. This does not include the NHL's constraint on the number of spots a team can move up.",
 		numToPick: 2,
 		chances: [185, 135, 115, 95, 85, 75, 65, 60, 50, 35, 30, 25, 20, 15, 5, 5],
 	},
@@ -111,6 +111,15 @@ export function App() {
 		() => getProbs(chances, numToPick, false),
 		[chances, numToPick],
 	);
+
+	const onAddTeam = (direction: "top" | "bottom") => () => {
+		if (direction === "bottom") {
+			setChances([...chances, chances.at(-1) ?? 1]);
+		} else {
+			setChances([...chances, chances[0] ?? 1]);
+		}
+		setPresetKey("custom");
+	};
 
 	return (
 		<>
@@ -186,9 +195,17 @@ export function App() {
 				</div>
 			) : null}
 
+			<button
+				className="btn btn-outline-primary mt-3"
+				type="button"
+				onClick={onAddTeam("top")}
+			>
+				Add Team
+			</button>
+
 			<div className="table-responsive mt-2">
 				<table className="table mb-0">
-					<thead>
+					<thead className="text-center">
 						<tr>
 							<th />
 							<th>Chances</th>
@@ -200,7 +217,12 @@ export function App() {
 					<tbody className="text-end">
 						{chances.map((chance, i) => (
 							<tr>
-								<td className="p-0 align-middle">
+								<td
+									className="p-0 align-middle"
+									style={{
+										width: 0,
+									}}
+								>
 									<button
 										className="btn btn-link text-danger border-0 p-0 m-0 text-decoration-none fs-5"
 										type="button"
@@ -212,7 +234,14 @@ export function App() {
 										✕
 									</button>
 								</td>
-								<td className="text-left">{chance}</td>
+								<td
+									className="text-left"
+									style={{
+										width: 0,
+									}}
+								>
+									{chance}
+								</td>
 								{chances.map((chance, j) => {
 									let pct: any = formatPercent(probs[i][j]);
 									if (tooSlow && pct !== undefined && j > 0) {
@@ -227,15 +256,28 @@ export function App() {
 			</div>
 
 			<button
-				className="btn btn-primary mt-3"
+				className="btn btn-outline-primary my-3"
 				type="button"
-				onClick={() => {
-					setChances([...chances, chances.at(-1) ?? 1]);
-					setPresetKey("custom");
-				}}
+				onClick={onAddTeam("bottom")}
 			>
 				Add Team
 			</button>
+
+			<p
+				style={{
+					maxWidth: 700,
+				}}
+			>
+				If you like simulating hypothetical draft lotteries, maybe you'd like
+				simulating a whole league? <a href="https://zengm.com/">ZenGM</a> has
+				you covered! Play{" "}
+				<a href="https://play.basketball-gm.com/">basketball</a>,{" "}
+				<a href="https://play.football-gm.com/">football</a>,{" "}
+				<a href="https://baseball.zengm.com/">baseball</a>, or{" "}
+				<a href="https://hockey.zengm.com/">hockey</a>. You can customize the
+				draft lottery and tons of other things, and play as many seasons as you
+				want. All for free!
+			</p>
 		</>
 	);
 }

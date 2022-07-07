@@ -65,6 +65,14 @@ export const getProbs = (
 	numToPick: number,
 	forceEvenIfTooSlow: boolean,
 ) => {
+	if (chances.length === 1) {
+		// For some reason, 1 team fails with the general code below
+		return {
+			tooSlow: false,
+			probs: [[1]],
+		};
+	}
+
 	const tooSlow =
 		!forceEvenIfTooSlow && draftLotteryProbsTooSlow(chances.length, numToPick);
 
