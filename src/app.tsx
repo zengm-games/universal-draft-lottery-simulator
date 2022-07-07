@@ -1,4 +1,4 @@
-import { useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import { getProbs } from "./getProbs";
 
 const presets = [
@@ -107,12 +107,20 @@ export function App() {
 	const [chances, setChances] = useState(preset?.chances ?? []);
 	const [numToPick, setNumToPick] = useState(preset?.numToPick ?? 0);
 
-	const { probs, tooSlow } = useMemo(
+	const { probs: probsNormal, tooSlow: tooSlowNormal } = useMemo(
 		() => getProbs(chances, numToPick, false),
 		[chances, numToPick],
 	);
 
+	const [probsOverride, setProbsOverride] = useState<
+		typeof probsNormal | undefined
+	>();
+
+	const probs = probsOverride ?? probsNormal;
+	const tooSlow = probsOverride ? false : tooSlowNormal;
+
 	const onAddTeam = (direction: "top" | "bottom") => () => {
+		setProbsOverride(undefined);
 		if (direction === "bottom") {
 			setChances([...chances, chances.at(-1) ?? 1]);
 		} else {
@@ -151,6 +159,7 @@ export function App() {
 							);
 
 							if (preset) {
+								setProbsOverride(undefined);
 								setPresetKey(preset.key);
 								setChances(preset.chances);
 								setNumToPick(preset.numToPick);
@@ -182,6 +191,7 @@ export function App() {
 						type="number"
 						value={numToPick}
 						onChange={(event) => {
+							setProbsOverride(undefined);
 							setPresetKey("custom");
 							setNumToPick(Math.round(event.target.valueAsNumber));
 						}}
@@ -198,20 +208,39 @@ export function App() {
 						Computing lottery odds for so many teams and picks is too slow.
 					</div>
 					<div>
-						<button className="btn btn-danger" onClick={() => {}} role="button">
+						<button
+							className="btn btn-danger"
+							onClick={() => {
+								const result = getProbs(chances, numToPick, true);
+								setProbsOverride(result.probs);
+							}}
+							role="button"
+						>
 							Do it anyway! (might freeze your browser)
 						</button>
 					</div>
 				</>
 			) : null}
 
-			<button
-				className="btn btn-outline-primary mt-3"
-				type="button"
-				onClick={onAddTeam("top")}
-			>
-				Add Team
-			</button>
+			<div className="mt-3">
+				<button
+					className="btn btn-outline-primary me-2"
+					type="button"
+					onClick={onAddTeam("top")}
+				>
+					Add Team
+				</button>
+
+				<button
+					className="btn btn-success"
+					type="button"
+					onClick={() => {
+						console.log("SIMULATE");
+					}}
+				>
+					Sim Lottery
+				</button>
+			</div>
 
 			<div className="table-responsive mt-2">
 				<table
@@ -242,6 +271,7 @@ export function App() {
 										className="btn btn-link text-danger border-0 p-0 m-0 text-decoration-none fs-5"
 										type="button"
 										onClick={() => {
+											setProbsOverride(undefined);
 											setChances(chances.filter((chance, j) => j !== i));
 											setPresetKey("custom");
 										}}
@@ -262,6 +292,7 @@ export function App() {
 										onChange={(event) => {
 											const number = parseFloat(event.target.value);
 											if (!Number.isNaN(number)) {
+												setProbsOverride(undefined);
 												setPresetKey("custom");
 												setChances(
 													chances.map((chance, j) =>
