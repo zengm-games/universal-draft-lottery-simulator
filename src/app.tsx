@@ -106,6 +106,7 @@ export function App() {
 
 	const [chances, setChances] = useState(preset?.chances ?? []);
 	const [numToPick, setNumToPick] = useState(preset?.numToPick ?? 0);
+	const [lotteryResults, setLotteryResults] = useState<number[] | undefined>();
 
 	const { probs: probsNormal, tooSlow: tooSlowNormal } = useMemo(
 		() => getProbs(chances, numToPick, false),
@@ -121,6 +122,7 @@ export function App() {
 
 	const onAddTeam = (direction: "top" | "bottom") => () => {
 		setProbsOverride(undefined);
+		setLotteryResults(undefined);
 		if (direction === "bottom") {
 			setChances([...chances, chances.at(-1) ?? 1]);
 		} else {
@@ -160,6 +162,7 @@ export function App() {
 
 							if (preset) {
 								setProbsOverride(undefined);
+								setLotteryResults(undefined);
 								setPresetKey(preset.key);
 								setChances(preset.chances);
 								setNumToPick(preset.numToPick);
@@ -192,6 +195,7 @@ export function App() {
 						value={numToPick}
 						onChange={(event) => {
 							setProbsOverride(undefined);
+							setLotteryResults(undefined);
 							setPresetKey("custom");
 							setNumToPick(Math.round(event.target.valueAsNumber));
 						}}
@@ -213,6 +217,7 @@ export function App() {
 							onClick={() => {
 								const result = getProbs(chances, numToPick, true);
 								setProbsOverride(result.probs);
+								setLotteryResults(undefined);
 							}}
 							role="button"
 						>
@@ -236,10 +241,23 @@ export function App() {
 					type="button"
 					onClick={() => {
 						console.log("SIMULATE");
+						setLotteryResults([0, 1]);
 					}}
 				>
 					Sim Lottery
 				</button>
+
+				{lotteryResults ? (
+					<button
+						className="btn btn-outline-danger ms-2"
+						type="button"
+						onClick={() => {
+							setLotteryResults(undefined);
+						}}
+					>
+						Clear Sim
+					</button>
+				) : null}
 			</div>
 
 			<div className="table-responsive mt-2">
@@ -249,7 +267,7 @@ export function App() {
 						width: "unset",
 					}}
 				>
-					<thead className="text-end">
+					<thead className="text-center">
 						<tr>
 							<th />
 							<th>Chances</th>
@@ -272,6 +290,7 @@ export function App() {
 										type="button"
 										onClick={() => {
 											setProbsOverride(undefined);
+											setLotteryResults(undefined);
 											setChances(chances.filter((chance, j) => j !== i));
 											setPresetKey("custom");
 										}}
@@ -293,6 +312,7 @@ export function App() {
 											const number = parseFloat(event.target.value);
 											if (!Number.isNaN(number)) {
 												setProbsOverride(undefined);
+												setLotteryResults(undefined);
 												setPresetKey("custom");
 												setChances(
 													chances.map((chance, j) =>
