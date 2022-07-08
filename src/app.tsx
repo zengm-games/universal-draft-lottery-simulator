@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useMemo, useState } from "preact/hooks";
 import { getProbs } from "./getProbs";
 import { simLottery } from "./simLottery";
 
@@ -132,6 +132,13 @@ export function App() {
 		setPresetKey("custom");
 	};
 
+	const onClearTeams = () => {
+		setProbsOverride(undefined);
+		setLotteryResults(undefined);
+		setChances([]);
+		setPresetKey("custom");
+	};
+
 	return (
 		<>
 			<h1>Universal Draft Lottery Simulator</h1>
@@ -238,12 +245,22 @@ export function App() {
 				</button>
 
 				<button
+					className="btn btn-outline-danger me-2"
+					type="button"
+					onClick={onClearTeams}
+					disabled={chances.length === 0}
+				>
+					Clear Teams
+				</button>
+
+				<button
 					className="btn btn-success"
 					type="button"
 					onClick={() => {
 						const results = simLottery(chances, numToPick);
 						setLotteryResults(results);
 					}}
+					disabled={chances.length === 0}
 				>
 					Sim Lottery
 				</button>
@@ -255,105 +272,122 @@ export function App() {
 						onClick={() => {
 							setLotteryResults(undefined);
 						}}
+						disabled={chances.length === 0}
 					>
 						Clear Sim
 					</button>
 				) : null}
 			</div>
 
-			<div className="table-responsive mt-2">
-				<table
-					className="table mb-0"
-					style={{
-						width: "unset",
-					}}
-				>
-					<thead className="text-center">
-						<tr>
-							<th />
-							<th>Chances</th>
-							{chances.map((chance, i) => (
-								<th key={i}>{ordinal(i + 1)}</th>
-							))}
-						</tr>
-					</thead>
-					<tbody className="text-end">
-						{chances.map((chance, i) => (
+			{chances.length > 0 ? (
+				<div className="table-responsive mt-2">
+					<table
+						className="table mb-0"
+						style={{
+							width: "unset",
+						}}
+					>
+						<thead className="text-center">
 							<tr>
-								<td
-									className="py-0 align-middle"
-									style={{
-										width: 0,
-									}}
-								>
-									<button
-										className="btn btn-link text-danger border-0 p-0 m-0 text-decoration-none fs-5"
-										type="button"
-										onClick={() => {
-											setProbsOverride(undefined);
-											setLotteryResults(undefined);
-											setChances(chances.filter((chance, j) => j !== i));
-											setPresetKey("custom");
+								<th />
+								<th>Chances</th>
+								{chances.map((chance, i) => (
+									<th key={i}>{ordinal(i + 1)}</th>
+								))}
+							</tr>
+						</thead>
+						<tbody className="text-end">
+							{chances.map((chance, i) => (
+								<tr>
+									<td
+										className="py-0 align-middle"
+										style={{
+											width: 0,
 										}}
 									>
-										✕
-									</button>
-								</td>
-								<td
-									className="py-0 align-middle"
-									style={{
-										width: 0,
-									}}
-								>
-									<input
-										className="form-control form-control-sm"
-										type="text"
-										value={chance}
-										onChange={(event) => {
-											const number = parseFloat(event.target.value);
-											if (!Number.isNaN(number)) {
+										<button
+											className="btn btn-link text-danger border-0 p-0 m-0 text-decoration-none fs-5"
+											type="button"
+											onClick={() => {
 												setProbsOverride(undefined);
 												setLotteryResults(undefined);
+												setChances(chances.filter((chance, j) => j !== i));
 												setPresetKey("custom");
-												setChances(
-													chances.map((chance, j) =>
-														i === j ? number : chance,
-													),
-												);
-											}
-										}}
-									/>
-								</td>
-								{chances.map((chance, j) => {
-									let pct = formatPercent(probs[i][j]);
-									if (tooSlow && pct !== undefined && j > 0) {
-										pct = "?";
-									}
-									return (
-										<td
-											className={
-												lotteryResults && lotteryResults[j] === i
-													? "table-success"
-													: undefined
-											}
+											}}
 										>
-											{pct}
-										</td>
-									);
-								})}
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
+											✕
+										</button>
+									</td>
+									<td
+										className="py-0 align-middle"
+										style={{
+											width: 0,
+										}}
+									>
+										<input
+											className="form-control form-control-sm"
+											type="text"
+											value={chance}
+											onChange={(event) => {
+												const number = parseFloat(event.target.value);
+												if (!Number.isNaN(number)) {
+													setProbsOverride(undefined);
+													setLotteryResults(undefined);
+													setPresetKey("custom");
+													setChances(
+														chances.map((chance, j) =>
+															i === j ? number : chance,
+														),
+													);
+												}
+											}}
+										/>
+									</td>
+									{chances.map((chance, j) => {
+										let pct = formatPercent(probs[i][j]);
+										if (tooSlow && pct !== undefined && j > 0) {
+											pct = "?";
+										}
+										return (
+											<td
+												className={
+													lotteryResults && lotteryResults[j] === i
+														? "table-success"
+														: undefined
+												}
+											>
+												{pct}
+											</td>
+										);
+									})}
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			) : (
+				<div className="my-3">You should add some teams...</div>
+			)}
 
-			<button
-				className="btn btn-outline-primary my-3"
-				type="button"
-				onClick={onAddTeam("bottom")}
-			>
-				Add Team
-			</button>
+			{chances.length > 0 ? (
+				<div className="my-3">
+					<button
+						className="btn btn-outline-primary me-2"
+						type="button"
+						onClick={onAddTeam("bottom")}
+					>
+						Add Team
+					</button>
+
+					<button
+						className="btn btn-outline-danger"
+						type="button"
+						onClick={onClearTeams}
+					>
+						Clear Teams
+					</button>
+				</div>
+			) : null}
 
 			<p
 				style={{
@@ -369,6 +403,12 @@ export function App() {
 				<a href="https://hockey.zengm.com/">hockey</a>. You can customize the
 				draft lottery and tons of other things, and play as many seasons as you
 				want. All for free!
+			</p>
+
+			<p>
+				<a href="https://github.com/zengm-games/universal-draft-lottery-simulator">
+					Source code on GitHub
+				</a>
 			</p>
 		</>
 	);
