@@ -1,3 +1,5 @@
+import { simLottery } from "./simLottery";
+
 class MultiDimensionalRange {
 	initial: boolean;
 	start: number;
@@ -53,6 +55,30 @@ class MultiDimensionalRange {
 	}
 }
 
+// If it's too slow to calculate the precise probability, just estimate
+const bootstrapLotteryProbs = (chances: number[], numToPick: number) => {
+	const ITERATIONS = 500000;
+
+	const probs: number[][] = [];
+
+	for (let i = 0; i < ITERATIONS; i++) {
+		const result = simLottery(chances, numToPick);
+		for (let j = 0; j < result.length; j++) {
+			const k = result[j];
+			if (!probs[k]) {
+				probs[k] = [];
+			}
+			if (!probs[k][j]) {
+				probs[k][j] = 1 / ITERATIONS;
+			} else {
+				probs[k][j] += 1 / ITERATIONS;
+			}
+		}
+	}
+
+	return probs;
+};
+
 const draftLotteryProbsTooSlow = (numTeams: number, numToPick: number) => {
 	const count = numTeams ** numToPick;
 
@@ -60,11 +86,8 @@ const draftLotteryProbsTooSlow = (numTeams: number, numToPick: number) => {
 	return count >= 1e7;
 };
 
-export const getProbs = (
-	chances: number[],
-	numToPick: number,
-	forceEvenIfTooSlow: boolean,
-) => {
+export const getProbs = (chances: number[], numToPick: number) => {
+	console.time("normal");
 	if (chances.length === 1) {
 		// For some reason, 1 team fails with the general code below
 		return {
@@ -73,8 +96,14 @@ export const getProbs = (
 		};
 	}
 
-	const tooSlow =
-		!forceEvenIfTooSlow && draftLotteryProbsTooSlow(chances.length, numToPick);
+	const tooSlow = draftLotteryProbsTooSlow(chances.length, numToPick);
+
+	if (tooSlow) {
+		return {
+			tooSlow,
+			probs: bootstrapLotteryProbs(chances, numToPick),
+		};
+	}
 
 	const totalChances = chances.reduce((total, current) => total + current, 0);
 

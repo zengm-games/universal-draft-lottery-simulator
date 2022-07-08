@@ -109,23 +109,15 @@ export function App() {
 	const [numToPick, setNumToPick] = useState(preset?.numToPick ?? 0);
 	const [lotteryResults, setLotteryResults] = useState<number[] | undefined>();
 
-	const { probs: probsNormal, tooSlow: tooSlowNormal } = useMemo(
-		() => getProbs(chances, numToPick, false),
+	const { probs, tooSlow } = useMemo(
+		() => getProbs(chances, numToPick),
 		[chances, numToPick],
 	);
 
-	const [probsOverride, setProbsOverride] = useState<
-		typeof probsNormal | undefined
-	>();
-
-	const probs = probsOverride ?? probsNormal;
-	const tooSlow = probsOverride ? false : tooSlowNormal;
-
 	const onAddTeam = (direction: "top" | "bottom") => () => {
-		setProbsOverride(undefined);
 		setLotteryResults(undefined);
 		if (direction === "bottom") {
-			setChances([...chances, chances.at(-1) ?? 1]);
+			setChances([...chances, chances[chances.length - 1] ?? 1]);
 		} else {
 			setChances([chances[0] ?? 1, ...chances]);
 		}
@@ -133,7 +125,6 @@ export function App() {
 	};
 
 	const onClearTeams = () => {
-		setProbsOverride(undefined);
 		setLotteryResults(undefined);
 		setChances([]);
 		setPresetKey("custom");
@@ -150,7 +141,7 @@ export function App() {
 				with any number of teams and any chances per team.
 			</p>
 
-			<form
+			<div
 				className="row"
 				style={{
 					maxWidth: 500,
@@ -169,7 +160,6 @@ export function App() {
 							);
 
 							if (preset) {
-								setProbsOverride(undefined);
 								setLotteryResults(undefined);
 								setPresetKey(preset.key);
 								setChances(preset.chances);
@@ -202,14 +192,13 @@ export function App() {
 						type="number"
 						value={numToPick}
 						onChange={(event) => {
-							setProbsOverride(undefined);
 							setLotteryResults(undefined);
 							setPresetKey("custom");
 							setNumToPick(Math.round(event.target.valueAsNumber));
 						}}
 					></input>
 				</div>
-			</form>
+			</div>
 			{preset ? (
 				<div className="text-muted mt-2">{preset.description}</div>
 			) : null}
@@ -217,20 +206,8 @@ export function App() {
 			{tooSlow ? (
 				<>
 					<div className="text-danger mt-2 mb-1">
-						Computing lottery odds for so many teams and picks is too slow.
-					</div>
-					<div>
-						<button
-							className="btn btn-danger"
-							onClick={() => {
-								const result = getProbs(chances, numToPick, true);
-								setProbsOverride(result.probs);
-								setLotteryResults(undefined);
-							}}
-							role="button"
-						>
-							Do it anyway! (might freeze your browser)
-						</button>
+						Computing exact odds for so many teams and picks is too slow, so
+						estimates are shown.
 					</div>
 				</>
 			) : null}
@@ -309,7 +286,6 @@ export function App() {
 											className="btn btn-link text-danger border-0 p-0 m-0 text-decoration-none fs-5"
 											type="button"
 											onClick={() => {
-												setProbsOverride(undefined);
 												setLotteryResults(undefined);
 												setChances(chances.filter((chance, j) => j !== i));
 												setPresetKey("custom");
@@ -331,7 +307,6 @@ export function App() {
 											onChange={(event) => {
 												const number = parseFloat(event.target.value);
 												if (!Number.isNaN(number)) {
-													setProbsOverride(undefined);
 													setLotteryResults(undefined);
 													setPresetKey("custom");
 													setChances(
@@ -344,10 +319,7 @@ export function App() {
 										/>
 									</td>
 									{chances.map((chance, j) => {
-										let pct = formatPercent(probs[i][j]);
-										if (tooSlow && pct !== undefined && j > 0) {
-											pct = "?";
-										}
+										const pct = formatPercent(probs[i][j]);
 										return (
 											<td
 												className={
