@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { getProbs } from "./getProbs";
+import { simLottery } from "./simLottery";
 
 const presets = [
 	{
@@ -153,7 +154,7 @@ export function App() {
 						Preset Lottery Type
 					</label>
 					<select
-						className="form-control"
+						className="form-select"
 						id="presetKey"
 						onChange={(event) => {
 							const preset = presets.find(
@@ -240,8 +241,8 @@ export function App() {
 					className="btn btn-success"
 					type="button"
 					onClick={() => {
-						console.log("SIMULATE");
-						setLotteryResults([0, 1]);
+						const results = simLottery(chances, numToPick);
+						setLotteryResults(results);
 					}}
 				>
 					Sim Lottery
@@ -328,7 +329,17 @@ export function App() {
 									if (tooSlow && pct !== undefined && j > 0) {
 										pct = "?";
 									}
-									return <td>{pct}</td>;
+									return (
+										<td
+											className={
+												lotteryResults && lotteryResults[j] === i
+													? "table-success"
+													: undefined
+											}
+										>
+											{pct}
+										</td>
+									);
 								})}
 							</tr>
 						))}
