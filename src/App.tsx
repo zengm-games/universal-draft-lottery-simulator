@@ -335,7 +335,13 @@ export const App = () => {
 													setLotteryResults(undefined);
 													setChances(chances.filter((_chance, j) => j !== i));
 													setPresetKey("custom");
-													setNames(names.filter((_name, j) => j !== i));
+													const namesAreAllDefault =
+														checkNamesAreAllDefault(names);
+													if (namesAreAllDefault) {
+														setNames(getDefaultNames(chances.length - 1));
+													} else {
+														setNames(names.filter((_name, j) => j !== i));
+													}
 												}}
 												title="Remove team"
 											>
@@ -411,6 +417,22 @@ export const App = () => {
 			{chances.length > 0 ? (
 				<div className="my-3">{addClearButtons("bottom")}</div>
 			) : null}
+			<div className="alert">
+				If you like simulating hypothetical draft lotteries, maybe you'd like
+				simulating a whole league? <a href="https://zengm.com/">ZenGM</a> has
+				you covered! Play{" "}
+				<a href="https://play.basketball-gm.com/">basketball</a>,{" "}
+				<a href="https://play.football-gm.com/">football</a>,{" "}
+				<a href="https://baseball.zengm.com/">baseball</a>, or{" "}
+				<a href="https://hockey.zengm.com/">hockey</a>. You can customize the
+				draft lottery and tons of other things, and play as many seasons as you
+				want. All for free!
+			</div>
+			<p>
+				<a href="https://github.com/zengm-games/universal-draft-lottery-simulator">
+					Source code on GitHub
+				</a>
+			</p>
 		</>
 	);
 };
