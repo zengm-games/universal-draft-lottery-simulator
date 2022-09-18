@@ -1,5 +1,5 @@
 import { render } from "preact";
-import { App } from "./app";
-import "bootstrap/dist/css/bootstrap.min.css";
+import { App } from "./App";
+import "./style.css";
 
 render(<App />, document.getElementById("app")!);

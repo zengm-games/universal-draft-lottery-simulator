@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	a {
+		@apply text-blue-600 underline hover:text-blue-800;
+	}
+
+	.alert {
+		@apply bg-cyan-100 text-cyan-900 rounded-lg p-3 mb-3 max-w-[1000px];
+	}
+
+	.form-control {
+		@apply w-full px-3 py-2 bg-white border border-slate-300 rounded-md placeholder-slate-400 focus:outline-none focus:border-blue-300 focus:ring-1 focus:ring-blue-300;
+	}
+
+	td,
+	th {
+		@apply p-2;
+	}
+}

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "preact/hooks";
 import { getProbs } from "./getProbs";
 import { simLottery } from "./simLottery";
+import { Button } from "./Button";
 
 const presets = [
 	{
@@ -101,7 +102,7 @@ const ordinal = (x: number) => {
 const formatPercent = (num: number | undefined) =>
 	num !== undefined ? `${(num * 100).toFixed(1)}%` : undefined;
 
-export function App() {
+export const App = () => {
 	const [presetKey, setPresetKey] = useState("nba2019");
 	const preset = presets.find((preset) => preset.key === presetKey);
 
@@ -130,24 +131,45 @@ export function App() {
 		setPresetKey("custom");
 	};
 
+	const addClearButtons = (
+		<>
+			<Button
+				variant="primary"
+				outline
+				className="mr-2"
+				onClick={onAddTeam("top")}
+			>
+				Add Team
+			</Button>
+
+			<Button
+				variant="danger"
+				outline
+				className="mr-2"
+				onClick={onClearTeams}
+				disabled={chances.length === 0}
+			>
+				Clear Teams
+			</Button>
+		</>
+	);
+
 	return (
 		<>
 			<div
-				className="row"
+				className="columns-2"
 				style={{
 					maxWidth: 500,
 				}}
 			>
-				<div className="col">
-					<label className="form-label" htmlFor="presetKey">
-						Preset Lottery Type
-					</label>
+				<div>
+					<label htmlFor="presetKey">Preset Lottery Type</label>
 					<select
-						className="form-select"
+						className="form-control mt-1 h-[42px]"
 						id="presetKey"
 						onChange={(event) => {
 							const preset = presets.find(
-								(preset) => preset.key === event.target.value,
+								(preset) => preset.key === (event.target as any).value,
 							);
 
 							if (preset) {
@@ -170,63 +192,45 @@ export function App() {
 					</select>
 				</div>
 
-				<div className="col">
-					<label className="form-label" htmlFor="numToPick">
-						<span className="d-sm-none"># Lottery Selections</span>
-						<span className="d-none d-sm-inline">
+				<div>
+					<label htmlFor="numToPick">
+						<span className="sm:hidden"># Lottery Selections</span>
+						<span className="hidden sm:inline">
 							Number of Lottery Selections
 						</span>
 					</label>
 					<input
-						className="form-control"
+						className="form-control mt-1  h-[42px]"
 						id="numToPick"
 						type="number"
 						value={numToPick}
 						onChange={(event) => {
 							setLotteryResults(undefined);
 							setPresetKey("custom");
-							setNumToPick(Math.round(event.target.valueAsNumber));
+							setNumToPick(Math.round((event.target as any).valueAsNumber));
 						}}
 					></input>
 				</div>
 			</div>
 			{preset ? (
-				<div className="text-muted mt-2">{preset.description}</div>
+				<div className="text-slate-500 mt-1">{preset.description}</div>
 			) : null}
 
 			{tooSlow ? (
 				<>
-					<div className="text-danger mt-2 mb-1">
+					<div className="text-red-600 mt-1">
 						Computing exact odds for so many teams and picks is too slow, so
 						estimates are shown.
 					</div>
 				</>
 			) : null}
 
-			<div className="mt-3 d-sm-flex">
-				<div>
-					<button
-						className="btn btn-outline-primary me-2"
-						type="button"
-						onClick={onAddTeam("top")}
-					>
-						Add Team
-					</button>
+			<div className="mt-3 sm:flex">
+				<div>{addClearButtons}</div>
 
-					<button
-						className="btn btn-outline-danger me-2"
-						type="button"
-						onClick={onClearTeams}
-						disabled={chances.length === 0}
-					>
-						Clear Teams
-					</button>
-				</div>
-
-				<div className="mt-2 mt-sm-0">
-					<button
-						className="btn btn-success"
-						type="button"
+				<div className="mt-2 sm:mt-0">
+					<Button
+						variant="success"
 						onClick={() => {
 							const results = simLottery(chances, numToPick);
 							setLotteryResults(results);
@@ -234,36 +238,37 @@ export function App() {
 						disabled={chances.length === 0}
 					>
 						Sim Lottery
-					</button>
+					</Button>
 
 					{lotteryResults ? (
-						<button
-							className="btn btn-outline-danger ms-2"
-							type="button"
+						<Button
+							variant="danger"
+							className="ml-2"
 							onClick={() => {
 								setLotteryResults(undefined);
 							}}
+							outline
 							disabled={chances.length === 0}
 						>
 							Clear Sim
-						</button>
+						</Button>
 					) : null}
 				</div>
 			</div>
 
 			{chances.length > 0 ? (
-				<div className="table-responsive mt-2">
+				<div className="mt-2 overflow-x-auto">
 					<table
-						className="table mb-0"
+						className="table-auto"
 						style={{
 							width: "unset",
 						}}
 					>
 						<thead className="text-center">
-							<tr>
+							<tr className="border-b-2 border-slate-500">
 								<th />
 								<th>Chances</th>
-								{chances.map((chance, i) => (
+								{chances.map((_chance, i) => (
 									<th key={i}>{ordinal(i + 1)}</th>
 								))}
 							</tr>
@@ -273,7 +278,7 @@ export function App() {
 								const inputId = `chances-${i}`;
 
 								return (
-									<tr>
+									<tr className="border-b">
 										<td
 											className="py-0 align-middle"
 											style={{
@@ -281,13 +286,14 @@ export function App() {
 											}}
 										>
 											<button
-												className="btn btn-link text-danger border-0 p-0 m-0 text-decoration-none fs-5"
+												className="text-red-600 text-xl"
 												type="button"
 												onClick={() => {
 													setLotteryResults(undefined);
-													setChances(chances.filter((chance, j) => j !== i));
+													setChances(chances.filter((_chance, j) => j !== i));
 													setPresetKey("custom");
 												}}
+												title="Remove team"
 											>
 												✕
 											</button>
@@ -298,16 +304,18 @@ export function App() {
 												width: 0,
 											}}
 										>
-											<label className="visually-hidden" htmlFor={inputId}>
+											<label className="sr-only" htmlFor={inputId}>
 												Lottery chances for team #{i + 1}
 											</label>
 											<input
 												id={inputId}
-												className="form-control form-control-sm"
+												className="form-control py-1 px-2 text-sm"
 												type="text"
 												value={chance}
 												onChange={(event) => {
-													const number = parseFloat(event.target.value);
+													const number = parseFloat(
+														(event.target as any).value,
+													);
 													if (!Number.isNaN(number)) {
 														setLotteryResults(undefined);
 														setPresetKey("custom");
@@ -320,7 +328,7 @@ export function App() {
 												}}
 											/>
 										</td>
-										{chances.map((chance, j) => {
+										{chances.map((_chance, j) => {
 											const pct = formatPercent(probs[i][j]);
 											return (
 												<td
@@ -345,24 +353,8 @@ export function App() {
 			)}
 
 			{chances.length > 0 ? (
-				<div className="my-3">
-					<button
-						className="btn btn-outline-primary me-2"
-						type="button"
-						onClick={onAddTeam("bottom")}
-					>
-						Add Team
-					</button>
-
-					<button
-						className="btn btn-outline-danger"
-						type="button"
-						onClick={onClearTeams}
-					>
-						Clear Teams
-					</button>
-				</div>
+				<div className="my-3">{addClearButtons}</div>
 			) : null}
 		</>
 	);
-}
+};
