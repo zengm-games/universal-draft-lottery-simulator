@@ -3,5 +3,5 @@ import preact from "@preact/preset-vite";
 
 export default defineConfig({
 	plugins: [preact()],
-	base: "/universal-draft-lottery-simulator",
+	base: "/universal-draft-lottery-simulator/",
 });

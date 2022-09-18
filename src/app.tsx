@@ -132,15 +132,6 @@ export function App() {
 
 	return (
 		<>
-			<h1>Universal Draft Lottery Simulator</h1>
-			<p>
-				Calculate the odds and simulate an{" "}
-				<a href="https://en.wikipedia.org/wiki/NBA_draft_lottery">
-					NBA-like draft lottery
-				</a>{" "}
-				with any number of teams and any chances per team.
-			</p>
-
 			<div
 				className="row"
 				style={{
@@ -212,48 +203,52 @@ export function App() {
 				</>
 			) : null}
 
-			<div className="mt-3">
-				<button
-					className="btn btn-outline-primary me-2"
-					type="button"
-					onClick={onAddTeam("top")}
-				>
-					Add Team
-				</button>
-
-				<button
-					className="btn btn-outline-danger me-2"
-					type="button"
-					onClick={onClearTeams}
-					disabled={chances.length === 0}
-				>
-					Clear Teams
-				</button>
-
-				<button
-					className="btn btn-success"
-					type="button"
-					onClick={() => {
-						const results = simLottery(chances, numToPick);
-						setLotteryResults(results);
-					}}
-					disabled={chances.length === 0}
-				>
-					Sim Lottery
-				</button>
-
-				{lotteryResults ? (
+			<div className="mt-3 d-sm-flex">
+				<div>
 					<button
-						className="btn btn-outline-danger ms-2"
+						className="btn btn-outline-primary me-2"
+						type="button"
+						onClick={onAddTeam("top")}
+					>
+						Add Team
+					</button>
+
+					<button
+						className="btn btn-outline-danger me-2"
+						type="button"
+						onClick={onClearTeams}
+						disabled={chances.length === 0}
+					>
+						Clear Teams
+					</button>
+				</div>
+
+				<div className="mt-2 mt-sm-0">
+					<button
+						className="btn btn-success"
 						type="button"
 						onClick={() => {
-							setLotteryResults(undefined);
+							const results = simLottery(chances, numToPick);
+							setLotteryResults(results);
 						}}
 						disabled={chances.length === 0}
 					>
-						Clear Sim
+						Sim Lottery
 					</button>
-				) : null}
+
+					{lotteryResults ? (
+						<button
+							className="btn btn-outline-danger ms-2"
+							type="button"
+							onClick={() => {
+								setLotteryResults(undefined);
+							}}
+							disabled={chances.length === 0}
+						>
+							Clear Sim
+						</button>
+					) : null}
+				</div>
 			</div>
 
 			{chances.length > 0 ? (
@@ -274,66 +269,74 @@ export function App() {
 							</tr>
 						</thead>
 						<tbody className="text-end">
-							{chances.map((chance, i) => (
-								<tr>
-									<td
-										className="py-0 align-middle"
-										style={{
-											width: 0,
-										}}
-									>
-										<button
-											className="btn btn-link text-danger border-0 p-0 m-0 text-decoration-none fs-5"
-											type="button"
-											onClick={() => {
-												setLotteryResults(undefined);
-												setChances(chances.filter((chance, j) => j !== i));
-												setPresetKey("custom");
+							{chances.map((chance, i) => {
+								const inputId = `chances-${i}`;
+
+								return (
+									<tr>
+										<td
+											className="py-0 align-middle"
+											style={{
+												width: 0,
 											}}
 										>
-											✕
-										</button>
-									</td>
-									<td
-										className="py-0 align-middle"
-										style={{
-											width: 0,
-										}}
-									>
-										<input
-											className="form-control form-control-sm"
-											type="text"
-											value={chance}
-											onChange={(event) => {
-												const number = parseFloat(event.target.value);
-												if (!Number.isNaN(number)) {
+											<button
+												className="btn btn-link text-danger border-0 p-0 m-0 text-decoration-none fs-5"
+												type="button"
+												onClick={() => {
 													setLotteryResults(undefined);
+													setChances(chances.filter((chance, j) => j !== i));
 													setPresetKey("custom");
-													setChances(
-														chances.map((chance, j) =>
-															i === j ? number : chance,
-														),
-													);
-												}
-											}}
-										/>
-									</td>
-									{chances.map((chance, j) => {
-										const pct = formatPercent(probs[i][j]);
-										return (
-											<td
-												className={
-													lotteryResults && lotteryResults[j] === i
-														? "table-success"
-														: undefined
-												}
+												}}
 											>
-												{pct}
-											</td>
-										);
-									})}
-								</tr>
-							))}
+												✕
+											</button>
+										</td>
+										<td
+											className="py-0 align-middle"
+											style={{
+												width: 0,
+											}}
+										>
+											<label className="visually-hidden" htmlFor={inputId}>
+												Lottery chances for team #{i + 1}
+											</label>
+											<input
+												id={inputId}
+												className="form-control form-control-sm"
+												type="text"
+												value={chance}
+												onChange={(event) => {
+													const number = parseFloat(event.target.value);
+													if (!Number.isNaN(number)) {
+														setLotteryResults(undefined);
+														setPresetKey("custom");
+														setChances(
+															chances.map((chance, j) =>
+																i === j ? number : chance,
+															),
+														);
+													}
+												}}
+											/>
+										</td>
+										{chances.map((chance, j) => {
+											const pct = formatPercent(probs[i][j]);
+											return (
+												<td
+													className={
+														lotteryResults && lotteryResults[j] === i
+															? "table-success"
+															: undefined
+													}
+												>
+													{pct}
+												</td>
+											);
+										})}
+									</tr>
+								);
+							})}
 						</tbody>
 					</table>
 				</div>
@@ -360,28 +363,6 @@ export function App() {
 					</button>
 				</div>
 			) : null}
-
-			<p
-				style={{
-					maxWidth: 700,
-				}}
-			>
-				If you like simulating hypothetical draft lotteries, maybe you'd like
-				simulating a whole league? <a href="https://zengm.com/">ZenGM</a> has
-				you covered! Play{" "}
-				<a href="https://play.basketball-gm.com/">basketball</a>,{" "}
-				<a href="https://play.football-gm.com/">football</a>,{" "}
-				<a href="https://baseball.zengm.com/">baseball</a>, or{" "}
-				<a href="https://hockey.zengm.com/">hockey</a>. You can customize the
-				draft lottery and tons of other things, and play as many seasons as you
-				want. All for free!
-			</p>
-
-			<p>
-				<a href="https://github.com/zengm-games/universal-draft-lottery-simulator">
-					Source code on GitHub
-				</a>
-			</p>
 		</>
 	);
 }
