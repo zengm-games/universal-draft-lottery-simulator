@@ -19,4 +19,8 @@
 	th {
 		@apply p-2;
 	}
+
+	h1 {
+		font-family: Kanit;
+	}
 }
