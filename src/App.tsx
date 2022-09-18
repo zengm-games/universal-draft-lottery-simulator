@@ -102,6 +102,25 @@ const ordinal = (x: number) => {
 const formatPercent = (num: number | undefined) =>
 	num !== undefined ? `${(num * 100).toFixed(1)}%` : undefined;
 
+const getDefaultNames = (numTeams: number) => {
+	const names = [];
+	for (let i = 0; i < numTeams; i++) {
+		names.push(`Team ${i + 1}`);
+	}
+	return names;
+};
+
+const checkNamesAreAllDefault = (names: string[]) => {
+	const defaultNames = getDefaultNames(names.length);
+	for (let i = 0; i < names.length; i++) {
+		if (names[i] !== defaultNames[i]) {
+			return false;
+		}
+	}
+
+	return true;
+};
+
 export const App = () => {
 	const [presetKey, setPresetKey] = useState("nba2019");
 	const preset = presets.find((preset) => preset.key === presetKey);
@@ -109,6 +128,7 @@ export const App = () => {
 	const [chances, setChances] = useState(preset?.chances ?? []);
 	const [numToPick, setNumToPick] = useState(preset?.numToPick ?? 0);
 	const [lotteryResults, setLotteryResults] = useState<number[] | undefined>();
+	const [names, setNames] = useState(() => getDefaultNames(chances.length));
 
 	const { probs, tooSlow } = useMemo(
 		() => getProbs(chances, numToPick),
@@ -117,27 +137,41 @@ export const App = () => {
 
 	const onAddTeam = (direction: "top" | "bottom") => () => {
 		setLotteryResults(undefined);
+
 		if (direction === "bottom") {
 			setChances([...chances, chances[chances.length - 1] ?? 1]);
 		} else {
 			setChances([chances[0] ?? 1, ...chances]);
 		}
+
+		const namesAreAllDefault = checkNamesAreAllDefault(names);
+		if (namesAreAllDefault) {
+			setNames(getDefaultNames(chances.length + 1));
+		} else {
+			if (direction === "bottom") {
+				setNames([...names, `Team ${names.length + 1}`]);
+			} else {
+				setNames([`Team ${names.length + 1}`, ...names]);
+			}
+		}
+
 		setPresetKey("custom");
 	};
 
 	const onClearTeams = () => {
 		setLotteryResults(undefined);
 		setChances([]);
+		setNames([]);
 		setPresetKey("custom");
 	};
 
-	const addClearButtons = (
+	const addClearButtons = (direction: "top" | "bottom") => (
 		<>
 			<Button
 				variant="primary"
 				outline
 				className="mr-2"
-				onClick={onAddTeam("top")}
+				onClick={onAddTeam(direction)}
 			>
 				Add Team
 			</Button>
@@ -177,6 +211,18 @@ export const App = () => {
 								setPresetKey(preset.key);
 								setChances(preset.chances);
 								setNumToPick(preset.numToPick);
+
+								const namesAreAllDefault = checkNamesAreAllDefault(names);
+								const numNamesNeeded = preset.chances.length;
+								if (namesAreAllDefault) {
+									setNames(getDefaultNames(numNamesNeeded));
+								} else {
+									const newNames = names.slice(0, numNamesNeeded);
+									while (newNames.length < numNamesNeeded) {
+										newNames.push(`Team ${newNames.length + 1}`);
+									}
+									setNames(newNames);
+								}
 							} else {
 								setPresetKey("custom");
 							}
@@ -226,7 +272,7 @@ export const App = () => {
 			) : null}
 
 			<div className="mt-3 sm:flex">
-				<div>{addClearButtons}</div>
+				<div>{addClearButtons("top")}</div>
 
 				<div className="mt-2 sm:mt-0">
 					<Button
@@ -267,6 +313,7 @@ export const App = () => {
 						<thead className="text-center">
 							<tr className="border-b-2 border-slate-500">
 								<th />
+								<th>Team Name</th>
 								<th>Chances</th>
 								{chances.map((_chance, i) => (
 									<th key={i}>{ordinal(i + 1)}</th>
@@ -275,7 +322,8 @@ export const App = () => {
 						</thead>
 						<tbody className="text-end">
 							{chances.map((chance, i) => {
-								const inputId = `chances-${i}`;
+								const nameId = `name-${i}`;
+								const chancesId = `chances-${i}`;
 
 								return (
 									<tr className="border-b">
@@ -287,18 +335,36 @@ export const App = () => {
 													setLotteryResults(undefined);
 													setChances(chances.filter((_chance, j) => j !== i));
 													setPresetKey("custom");
+													setNames(names.filter((_name, j) => j !== i));
 												}}
 												title="Remove team"
 											>
 												✕
 											</button>
 										</td>
+										<td className="py-0">
+											<label className="sr-only" htmlFor={nameId}>
+												Name of team #{i + 1}
+											</label>
+											<input
+												id={nameId}
+												className="form-control py-1 px-2 text-sm w-[100px]"
+												type="text"
+												value={names[i]}
+												onChange={(event) => {
+													const newName = (event.target as any).result;
+													setNames(
+														names.map((name, j) => (j === i ? newName : name)),
+													);
+												}}
+											/>
+										</td>
 										<td className="py-0 w-0">
-											<label className="sr-only" htmlFor={inputId}>
+											<label className="sr-only" htmlFor={chancesId}>
 												Lottery chances for team #{i + 1}
 											</label>
 											<input
-												id={inputId}
+												id={chancesId}
 												className="form-control py-1 px-2 text-sm"
 												type="text"
 												value={chance}
@@ -343,7 +409,7 @@ export const App = () => {
 			)}
 
 			{chances.length > 0 ? (
-				<div className="my-3">{addClearButtons}</div>
+				<div className="my-3">{addClearButtons("bottom")}</div>
 			) : null}
 		</>
 	);
