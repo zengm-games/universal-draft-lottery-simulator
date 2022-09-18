@@ -279,12 +279,7 @@ export const App = () => {
 
 								return (
 									<tr className="border-b">
-										<td
-											className="py-0 align-middle"
-											style={{
-												width: 0,
-											}}
-										>
+										<td className="py-0 w-0">
 											<button
 												className="text-red-600 text-xl"
 												type="button"
@@ -298,12 +293,7 @@ export const App = () => {
 												✕
 											</button>
 										</td>
-										<td
-											className="py-0 align-middle"
-											style={{
-												width: 0,
-											}}
-										>
+										<td className="py-0 w-0">
 											<label className="sr-only" htmlFor={inputId}>
 												Lottery chances for team #{i + 1}
 											</label>
@@ -334,7 +324,7 @@ export const App = () => {
 												<td
 													className={
 														lotteryResults && lotteryResults[j] === i
-															? "table-success"
+															? "bg-green-200"
 															: undefined
 													}
 												>
