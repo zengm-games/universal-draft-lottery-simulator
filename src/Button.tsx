@@ -22,7 +22,7 @@ export const Button = ({
 		colorClasses = "enabled:hover:bg-red-500 text-red-600 border-red-600";
 	} else if (variant === "success") {
 		if (!outline) {
-			colorClasses = "enabled:hover:bg-green-700 text-white bg-green-600";
+			colorClasses = "enabled:hover:bg-green-800 text-white bg-green-700";
 		}
 	}
 
