@@ -93,6 +93,7 @@ const Row = ({
 						} else {
 							setNames(names.filter((_name, j) => j !== i));
 						}
+						setHighlight(false);
 					}}
 					title="Remove team"
 				>
@@ -109,7 +110,7 @@ const Row = ({
 					type="text"
 					value={names[i]}
 					onChange={(event) => {
-						const newName = (event.target as any).result;
+						const newName = (event.target as any).value;
 						setNames(names.map((name, j) => (j === i ? newName : name)));
 					}}
 				/>
