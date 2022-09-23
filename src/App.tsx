@@ -372,7 +372,7 @@ export const App = () => {
 										const chancesId = `chances-${i}`;
 
 										return (
-											<tr className="border-b">
+											<tr className="border-b odd:bg-slate-100">
 												<td className="py-0 w-0">
 													<button
 														className="text-red-600 text-xl"
