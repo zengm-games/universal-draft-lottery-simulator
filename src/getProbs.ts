@@ -82,12 +82,10 @@ const bootstrapLotteryProbs = (chances: number[], numToPick: number) => {
 const draftLotteryProbsTooSlow = (numTeams: number, numToPick: number) => {
 	const count = numTeams ** numToPick;
 
-	// This will happen for baseball (18 teams, 6 picks) except for the hardcoded default
-	return count >= 1e7;
+	return count >= 5e6;
 };
 
 export const getProbs = (chances: number[], numToPick: number) => {
-	console.time("normal");
 	if (chances.length === 1) {
 		// For some reason, 1 team fails with the general code below
 		return {

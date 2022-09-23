@@ -1,6 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 import { simLottery } from "./simLottery";
 import { Button } from "./Button";
+// @ts-expect-error
 import MyWorker from "./worker?worker&inline";
 
 const presets = [
@@ -122,6 +123,7 @@ const checkNamesAreAllDefault = (names: string[]) => {
 };
 
 const worker: Worker = new MyWorker();
+let requestCount = 0;
 
 export const App = () => {
 	const [presetKey, setPresetKey] = useState("nba2019");
@@ -137,11 +139,17 @@ export const App = () => {
 
 	useEffect(() => {
 		setLoadingProbs(true);
-		worker.postMessage({ chances, numToPick });
+		requestCount += 1;
+		worker.postMessage({ chances, numToPick, requestCount });
 	}, [chances, numToPick]);
 
 	useEffect(() => {
 		const listener = (event: any) => {
+			// Make sure this data is not already stale
+			if (event.data.requestCount !== requestCount) {
+				return;
+			}
+
 			setTooSlow(event.data.tooSlow);
 			setProbs(event.data.probs);
 			setLoadingProbs(false);
