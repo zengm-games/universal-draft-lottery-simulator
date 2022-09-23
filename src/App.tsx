@@ -1,7 +1,7 @@
-import { useMemo, useState } from "preact/hooks";
-import { getProbs } from "./getProbs";
+import { useEffect, useState } from "preact/hooks";
 import { simLottery } from "./simLottery";
 import { Button } from "./Button";
+import MyWorker from "./worker?worker&inline";
 
 const presets = [
 	{
@@ -121,6 +121,8 @@ const checkNamesAreAllDefault = (names: string[]) => {
 	return true;
 };
 
+const worker: Worker = new MyWorker();
+
 export const App = () => {
 	const [presetKey, setPresetKey] = useState("nba2019");
 	const preset = presets.find((preset) => preset.key === presetKey);
@@ -129,11 +131,28 @@ export const App = () => {
 	const [numToPick, setNumToPick] = useState(preset?.numToPick ?? 0);
 	const [lotteryResults, setLotteryResults] = useState<number[] | undefined>();
 	const [names, setNames] = useState(() => getDefaultNames(chances.length));
+	const [loadingProbs, setLoadingProbs] = useState(true);
+	const [probs, setProbs] = useState<number[][] | undefined>(); // undefined on initial load only
+	const [tooSlow, setTooSlow] = useState(false);
 
-	const { probs, tooSlow } = useMemo(
-		() => getProbs(chances, numToPick),
-		[chances, numToPick],
-	);
+	useEffect(() => {
+		setLoadingProbs(true);
+		worker.postMessage({ chances, numToPick });
+	}, [chances, numToPick]);
+
+	useEffect(() => {
+		const listener = (event: any) => {
+			setTooSlow(event.data.tooSlow);
+			setProbs(event.data.probs);
+			setLoadingProbs(false);
+		};
+
+		worker.addEventListener("message", listener);
+
+		return () => {
+			worker.removeEventListener("message", listener);
+		};
+	}, []);
 
 	const onAddTeam = (direction: "top" | "bottom") => () => {
 		setLotteryResults(undefined);
@@ -246,7 +265,7 @@ export const App = () => {
 						</span>
 					</label>
 					<input
-						className="form-control mt-1  h-[42px]"
+						className="form-control mt-1 h-[42px]"
 						id="numToPick"
 						type="number"
 						value={numToPick}
@@ -302,121 +321,131 @@ export const App = () => {
 				</div>
 			</div>
 
-			{chances.length > 0 ? (
-				<div className="mt-2 overflow-x-auto">
-					<table
-						className="table-auto"
-						style={{
-							width: "unset",
-						}}
-					>
-						<thead className="text-center">
-							<tr className="border-b-2 border-slate-500">
-								<th />
-								<th>Team Name</th>
-								<th>Chances</th>
-								{chances.map((_chance, i) => (
-									<th key={i}>{ordinal(i + 1)}</th>
-								))}
-							</tr>
-						</thead>
-						<tbody className="text-end">
-							{chances.map((chance, i) => {
-								const nameId = `name-${i}`;
-								const chancesId = `chances-${i}`;
-
-								return (
-									<tr className="border-b">
-										<td className="py-0 w-0">
-											<button
-												className="text-red-600 text-xl"
-												type="button"
-												onClick={() => {
-													setLotteryResults(undefined);
-													setChances(chances.filter((_chance, j) => j !== i));
-													setPresetKey("custom");
-													const namesAreAllDefault =
-														checkNamesAreAllDefault(names);
-													if (namesAreAllDefault) {
-														setNames(getDefaultNames(chances.length - 1));
-													} else {
-														setNames(names.filter((_name, j) => j !== i));
-													}
-												}}
-												title="Remove team"
-											>
-												✕
-											</button>
-										</td>
-										<td className="py-0">
-											<label className="sr-only" htmlFor={nameId}>
-												Name of team #{i + 1}
-											</label>
-											<input
-												id={nameId}
-												className="form-control py-1 px-2 text-sm w-[100px]"
-												type="text"
-												value={names[i]}
-												onChange={(event) => {
-													const newName = (event.target as any).result;
-													setNames(
-														names.map((name, j) => (j === i ? newName : name)),
-													);
-												}}
-											/>
-										</td>
-										<td className="py-0 w-0">
-											<label className="sr-only" htmlFor={chancesId}>
-												Lottery chances for team #{i + 1}
-											</label>
-											<input
-												id={chancesId}
-												className="form-control py-1 px-2 text-sm"
-												type="text"
-												value={chance}
-												onChange={(event) => {
-													const number = parseFloat(
-														(event.target as any).value,
-													);
-													if (!Number.isNaN(number)) {
-														setLotteryResults(undefined);
-														setPresetKey("custom");
-														setChances(
-															chances.map((chance, j) =>
-																i === j ? number : chance,
-															),
-														);
-													}
-												}}
-											/>
-										</td>
-										{chances.map((_chance, j) => {
-											const pct = formatPercent(probs[i][j]);
-											return (
-												<td
-													className={
-														lotteryResults && lotteryResults[j] === i
-															? "bg-green-200"
-															: undefined
-													}
-												>
-													{pct}
-												</td>
-											);
-										})}
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
-				</div>
+			{!probs ? (
+				<div className="my-3">Loading...</div>
 			) : (
-				<div className="my-3">You should add some teams...</div>
-			)}
+				<>
+					{chances.length > 0 ? (
+						<div className="mt-2 overflow-x-auto">
+							<table
+								className="table-auto"
+								style={{
+									width: "unset",
+								}}
+							>
+								<thead className="text-center">
+									<tr className="border-b-2 border-slate-500">
+										<th />
+										<th>Team Name</th>
+										<th>Chances</th>
+										{chances.map((_chance, i) => (
+											<th key={i}>{ordinal(i + 1)}</th>
+										))}
+									</tr>
+								</thead>
+								<tbody className="text-end">
+									{chances.map((chance, i) => {
+										const nameId = `name-${i}`;
+										const chancesId = `chances-${i}`;
 
-			{chances.length > 0 ? (
-				<div className="my-3">{addClearButtons("bottom")}</div>
-			) : null}
+										return (
+											<tr className="border-b">
+												<td className="py-0 w-0">
+													<button
+														className="text-red-600 text-xl"
+														type="button"
+														onClick={() => {
+															setLotteryResults(undefined);
+															setChances(
+																chances.filter((_chance, j) => j !== i),
+															);
+															setPresetKey("custom");
+															const namesAreAllDefault =
+																checkNamesAreAllDefault(names);
+															if (namesAreAllDefault) {
+																setNames(getDefaultNames(chances.length - 1));
+															} else {
+																setNames(names.filter((_name, j) => j !== i));
+															}
+														}}
+														title="Remove team"
+													>
+														✕
+													</button>
+												</td>
+												<td className="py-0">
+													<label className="sr-only" htmlFor={nameId}>
+														Name of team #{i + 1}
+													</label>
+													<input
+														id={nameId}
+														className="form-control py-1 px-2 text-sm w-[100px]"
+														type="text"
+														value={names[i]}
+														onChange={(event) => {
+															const newName = (event.target as any).result;
+															setNames(
+																names.map((name, j) =>
+																	j === i ? newName : name,
+																),
+															);
+														}}
+													/>
+												</td>
+												<td className="py-0 w-0">
+													<label className="sr-only" htmlFor={chancesId}>
+														Lottery chances for team #{i + 1}
+													</label>
+													<input
+														id={chancesId}
+														className="form-control py-1 px-2 text-sm"
+														type="text"
+														value={chance}
+														onChange={(event) => {
+															const number = parseFloat(
+																(event.target as any).value,
+															);
+															if (!Number.isNaN(number)) {
+																setLotteryResults(undefined);
+																setPresetKey("custom");
+																setChances(
+																	chances.map((chance, j) =>
+																		i === j ? number : chance,
+																	),
+																);
+															}
+														}}
+													/>
+												</td>
+												{chances.map((_chance, j) => {
+													const pct = formatPercent(probs[i]?.[j]);
+													return (
+														<td
+															className={`${
+																lotteryResults && lotteryResults[j] === i
+																	? "bg-green-200"
+																	: ""
+															}${loadingProbs ? " text-slate-500" : ""}`}
+														>
+															{pct ?? "\u00A0"}
+														</td>
+													);
+												})}
+											</tr>
+										);
+									})}
+								</tbody>
+							</table>
+						</div>
+					) : (
+						<div className="my-3">You should add some teams...</div>
+					)}
+
+					{chances.length > 0 ? (
+						<div className="my-3">{addClearButtons("bottom")}</div>
+					) : null}
+				</>
+			)}
 			<div className="alert">
 				If you like simulating hypothetical draft lotteries, maybe you'd like
 				simulating a whole league? <a href="https://zengm.com/">ZenGM</a> has
