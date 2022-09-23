@@ -109,6 +109,7 @@ export const getProbs = (chances: number[], numToPick: number) => {
 	const skipped: number[][] = [];
 
 	// Get probabilities of top N picks for all teams
+	const defaultProb = numToPick === 0 ? 1 : 0;
 	for (let i = 0; i < chances.length; i++) {
 		probs[i] = [];
 
@@ -118,7 +119,7 @@ export const getProbs = (chances: number[], numToPick: number) => {
 		}
 
 		// +1 is to handle the case of 0 skips to N skips
-		skipped[i] = Array(numToPick + 1).fill(0);
+		skipped[i] = Array(numToPick + 1).fill(defaultProb);
 	}
 
 	const getProb = (indexes: number[]): number => {

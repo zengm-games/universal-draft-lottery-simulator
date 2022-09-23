@@ -100,8 +100,17 @@ const ordinal = (x: number) => {
 	return x.toString() + suffix;
 };
 
-const formatPercent = (num: number | undefined) =>
-	num !== undefined ? `${(num * 100).toFixed(1)}%` : undefined;
+const formatPercent = (num: number | undefined) => {
+	if (num === undefined) {
+		return num;
+	}
+
+	if (num === 1) {
+		return "100%";
+	}
+
+	return `${(num * 100).toFixed(1)}%`;
+};
 
 const getDefaultNames = (numTeams: number) => {
 	const names = [];
@@ -277,10 +286,16 @@ export const App = () => {
 						id="numToPick"
 						type="number"
 						value={numToPick}
+						min={0}
 						onChange={(event) => {
 							setLotteryResults(undefined);
 							setPresetKey("custom");
-							setNumToPick(Math.round((event.target as any).valueAsNumber));
+							const number = (event.target as any).valueAsNumber;
+							if (number < 0) {
+								setNumToPick(0);
+							} else {
+								setNumToPick(Math.round(number));
+							}
 						}}
 					></input>
 				</div>
