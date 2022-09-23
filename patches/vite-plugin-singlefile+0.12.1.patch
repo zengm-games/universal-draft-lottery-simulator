@@ -1,0 +1,22 @@
+diff --git a/node_modules/vite-plugin-singlefile/dist/cjs/index.js b/node_modules/vite-plugin-singlefile/dist/cjs/index.js
+index ce06633..2156cfa 100644
+--- a/node_modules/vite-plugin-singlefile/dist/cjs/index.js
++++ b/node_modules/vite-plugin-singlefile/dist/cjs/index.js
+@@ -15,7 +15,7 @@ function replaceScript(html, scriptFilename, scriptCode, removeViteModuleLoader
+ }
+ exports.replaceScript = replaceScript;
+ function replaceCss(html, scriptFilename, scriptCode) {
+-    const reCss = new RegExp(`<link[^>]*? href="[./]*${scriptFilename}"[^>]*?>`);
++    const reCss = new RegExp(`<link[^>]*? href=".*${scriptFilename}"[^>]*?>`);
+     const inlined = html.replace(reCss, `<style>\n${scriptCode}\n</style>`);
+     return inlined;
+ }
+@@ -89,8 +89,6 @@ const _useRecommendedBuildConfig = (config) => {
+     config.build.cssCodeSplit = false;
+     // Avoids the extra step of testing Brotli compression, which isn't really pertinent to a file served locally.
+     config.build.reportCompressedSize = false;
+-    // Subfolder bases are not supported, and shouldn't be needed because we're embedding everything.
+-    config.base = undefined;
+     if (!config.build.rollupOptions)
+         config.build.rollupOptions = {};
+     if (!config.build.rollupOptions.output)
