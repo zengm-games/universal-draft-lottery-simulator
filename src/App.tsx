@@ -105,14 +105,50 @@ export const checkNamesAreAllDefault = (names: string[]) => {
 const worker: Worker = new MyWorker();
 let requestCount = 0;
 
+const useLocalStorageState = (key: string, defaultValue: any) => {
+	const [state, setState] = useState(() => {
+		try {
+			const stored = localStorage.getItem(key);
+			if (stored !== null) {
+				return JSON.parse(stored);
+			}
+		} catch (error) {
+			console.warn("useLocalStorageState read error", key, error);
+		}
+
+		return typeof defaultValue === "function" ? defaultValue() : defaultValue;
+	});
+
+	useEffect(() => {
+		try {
+			localStorage.setItem(key, JSON.stringify(state));
+		} catch (error) {
+			console.warn("useLocalStorageState write error", key, error);
+		}
+	}, [key, state]);
+
+	return [state, setState];
+};
+
 export const App = () => {
-	const [presetKey, setPresetKey] = useState("nba2019");
+	const [presetKey, setPresetKey] = useLocalStorageState(
+		"presetKey",
+		"nba2019",
+	);
 	const preset = presets.find((preset) => preset.key === presetKey);
 
-	const [chances, setChances] = useState(preset?.chances ?? []);
-	const [numToPick, setNumToPick] = useState(preset?.numToPick ?? 0);
+	const [chances, setChances] = useLocalStorageState(
+		"chances",
+		preset?.chances ?? [],
+	);
+	const [numToPick, setNumToPick] = useLocalStorageState(
+		"numToPick",
+		preset?.numToPick ?? 0,
+	);
 	const [lotteryResults, setLotteryResults] = useState<number[] | undefined>();
-	const [names, setNames] = useState(() => getDefaultNames(chances.length));
+	const [names, setNames] = useLocalStorageState("names", () =>
+		getDefaultNames(chances.length),
+	);
 	const [loadingProbs, setLoadingProbs] = useState(true);
 	const [probs, setProbs] = useState<number[][] | undefined>(); // undefined on initial load only
 	const [tooSlow, setTooSlow] = useState(false);
