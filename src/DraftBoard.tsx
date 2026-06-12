@@ -1,45 +1,27 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import { ordinal, teamGradientColors } from "./draftBoardUtil";
+import {
+	createDraftVideoRecorder,
+	DraftVideoRecorder,
+	FANFARE_SOUND_FILE,
+	FANFARE_VOLUME,
+} from "./DraftVideoRecorder";
 
-const ordinal = (x: number) => {
-	let suffix;
-
-	if (x % 100 >= 11 && x % 100 <= 13) {
-		suffix = "th";
-	} else if (x % 10 === 1) {
-		suffix = "st";
-	} else if (x % 10 === 2) {
-		suffix = "nd";
-	} else if (x % 10 === 3) {
-		suffix = "rd";
-	} else {
-		suffix = "th";
-	}
-
-	return x.toString() + suffix;
-};
-
-const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
-
-// Evenly-spaced hues guarantee every pair of teams is at least 360/numTeams
-// degrees apart, and visiting them with a stride near numTeams/φ (kept
-// coprime with numTeams so every hue is used once) makes consecutive team
-// indexes very different colors
 const teamRowStyle = (teamIndex: number, numTeams: number) => {
-	let stride = Math.max(1, Math.round(numTeams / 1.618));
-	while (gcd(stride, numTeams) !== 1) {
-		stride += 1;
-	}
-
-	const hue = Math.round(((teamIndex * stride) % numTeams) * (360 / numTeams));
+	const [from, to] = teamGradientColors(teamIndex, numTeams);
 
 	return {
-		background: `linear-gradient(180deg, hsl(${hue}, 65%, 45%) 0%, hsl(${hue}, 70%, 27%) 100%)`,
+		background: `linear-gradient(180deg, ${from} 0%, ${to} 100%)`,
 	};
 };
 
 const FIRST_REVEAL_DELAY = 1200;
 const TOP_PICK_REVEAL_DELAY = 2500;
 const NUM_SLOW_PICKS = 3;
+
+// How long to keep recording after the last pick, so the video includes the
+// fanfare even if its duration is unknown
+const FALLBACK_FANFARE_MS = 5000;
 
 // Reveal later picks faster when there are many teams, so the whole reveal
 // stays under ~30 seconds, but always slow down for the top picks
@@ -57,6 +39,13 @@ type DraftBoardProps = {
 	onClose: () => void;
 };
 
+type DraftVideo = {
+	url: string;
+	filename: string;
+	file: File;
+	canShare: boolean;
+};
+
 export const DraftBoard = ({
 	lotteryResults,
 	names,
@@ -68,8 +57,41 @@ export const DraftBoard = ({
 	const [numRevealed, setNumRevealed] = useState(0);
 	const done = numRevealed >= numTeams;
 
+	// undefined while there might still be a video coming, null when there
+	// won't be one
+	const [video, setVideo] = useState<DraftVideo | null | undefined>(undefined);
+
 	const resultsRef = useRef<HTMLDivElement>(null);
 	const fanfarePlayed = useRef(false);
+	const recorderRef = useRef<DraftVideoRecorder | undefined>(undefined);
+	const numRevealedRef = useRef(0);
+
+	useEffect(() => {
+		let canceled = false;
+
+		createDraftVideoRecorder(lotteryResults, names).then((recorder) => {
+			// The reveal finishing before the recorder starts shouldn't happen,
+			// but if it somehow does, the video would never be finished
+			if (canceled || fanfarePlayed.current) {
+				recorder?.cancel();
+				return;
+			}
+			recorderRef.current = recorder;
+
+			// Catch up on any picks revealed while the recorder was starting
+			recorder?.setNumRevealed(numRevealedRef.current);
+		});
+
+		return () => {
+			canceled = true;
+			recorderRef.current?.cancel();
+		};
+	}, []);
+
+	useEffect(() => {
+		numRevealedRef.current = numRevealed;
+		recorderRef.current?.setNumRevealed(numRevealed);
+	}, [numRevealed]);
 
 	useEffect(() => {
 		if (done) {
@@ -90,15 +112,63 @@ export const DraftBoard = ({
 	}, [done, numRevealed, numTeams]);
 
 	useEffect(() => {
-		if (done && !fanfarePlayed.current) {
-			fanfarePlayed.current = true;
-			const audio = new Audio("success-fanfare-trumpets-6185.mp3");
-			audio.volume = 0.6;
+		if (!done || fanfarePlayed.current) {
+			return;
+		}
+		fanfarePlayed.current = true;
+
+		const recorder = recorderRef.current;
+
+		// Play the fanfare through the recorder so it's part of the video,
+		// falling back to a plain Audio element
+		let fanfareMs = recorder?.playFanfare() ?? 0;
+		if (fanfareMs === 0) {
+			const audio = new Audio(FANFARE_SOUND_FILE);
+			audio.volume = FANFARE_VOLUME;
 
 			// Ignore autoplay restrictions
 			audio.play().catch(() => {});
+
+			fanfareMs = FALLBACK_FANFARE_MS;
 		}
+
+		if (!recorder) {
+			setVideo(null);
+			return;
+		}
+
+		// Let the recording run through the fanfare before finishing it
+		const timeout = setTimeout(async () => {
+			const blob = await recorder.stop();
+			if (!blob) {
+				setVideo(null);
+				return;
+			}
+
+			const filename = `draft-lottery.${recorder.extension}`;
+			const file = new File([blob], filename, { type: blob.type });
+			setVideo({
+				url: URL.createObjectURL(blob),
+				filename,
+				file,
+				canShare:
+					typeof navigator.canShare === "function" &&
+					navigator.canShare({ files: [file] }),
+			});
+		}, fanfareMs + 500);
+
+		return () => {
+			clearTimeout(timeout);
+		};
 	}, [done]);
+
+	useEffect(() => {
+		return () => {
+			if (video) {
+				URL.revokeObjectURL(video.url);
+			}
+		};
+	}, [video]);
 
 	// If there are too many teams to fit on screen, keep the newly revealed
 	// pick in view. Picks reveal bottom-up, so the first revealed row in
@@ -178,6 +248,35 @@ export const DraftBoard = ({
 							Skip
 						</button>
 					) : null}
+					{video ? (
+						<>
+							<a
+								className="draftboard__button"
+								href={video.url}
+								download={video.filename}
+							>
+								Download Video
+							</a>
+							{video.canShare ? (
+								<button
+									className="draftboard__button"
+									type="button"
+									onClick={() => {
+										navigator
+											.share({
+												files: [video.file],
+												title: "Draft Lottery Results",
+											})
+											.catch(() => {
+												// The user canceled the share
+											});
+									}}
+								>
+									Share Video
+								</button>
+							) : null}
+						</>
+					) : null}
 					<button
 						className="draftboard__button"
 						type="button"
@@ -186,6 +285,9 @@ export const DraftBoard = ({
 						Close
 					</button>
 				</div>
+				{done && video === undefined && recorderRef.current ? (
+					<div className="draftboard__status">Preparing video…</div>
+				) : null}
 			</div>
 		</div>
 	);
