@@ -1,8 +1,5 @@
 import { ordinal, teamGradientColors } from "./draftBoardUtil";
 
-export const FANFARE_SOUND_FILE = "success-fanfare-trumpets-6185.mp3";
-export const FANFARE_VOLUME = 0.6;
-
 const WIDTH = 720;
 const MAX_HEIGHT = 1280;
 const FPS = 30;
@@ -31,60 +28,16 @@ export const videoRecordingSupported = () =>
 	"captureStream" in HTMLCanvasElement.prototype &&
 	pickMimeType() !== undefined;
 
-type RecorderAudio = {
-	context: AudioContext;
-	destination: MediaStreamAudioDestinationNode;
-};
-
-// The AudioContext must already be running when recording starts: a
-// suspended context delivers no audio samples, and the muxer aligns the
-// video timeline to the audio track, which would compress the whole video
-// into the fanfare at the end. If the browser blocks the context from
-// starting, record without sound rather than producing a broken video.
-const createRecorderAudio = async (): Promise<RecorderAudio | undefined> => {
-	try {
-		const AudioContextClass =
-			window.AudioContext ?? (window as any).webkitAudioContext;
-		const context: AudioContext = new AudioContextClass();
-
-		// resume() never settles when autoplay is blocked, so race a timeout
-		const resumed = await Promise.race([
-			context.resume().then(
-				() => true,
-				() => false,
-			),
-			new Promise<boolean>((resolve) => {
-				setTimeout(() => {
-					resolve(false);
-				}, 250);
-			}),
-		]);
-
-		if (!resumed || context.state !== "running") {
-			context.close().catch(() => {});
-			return undefined;
-		}
-
-		return { context, destination: context.createMediaStreamDestination() };
-	} catch {
-		return undefined;
-	}
-};
-
-export const createDraftVideoRecorder = async (
+export const createDraftVideoRecorder = (
 	lotteryResults: number[],
 	names: string[],
-): Promise<DraftVideoRecorder | undefined> => {
+): DraftVideoRecorder | undefined => {
 	if (!videoRecordingSupported()) {
 		return undefined;
 	}
 
 	try {
-		return new DraftVideoRecorder(
-			lotteryResults,
-			names,
-			await createRecorderAudio(),
-		);
+		return new DraftVideoRecorder(lotteryResults, names);
 	} catch {
 		return undefined;
 	}
@@ -124,15 +77,7 @@ export class DraftVideoRecorder {
 	private rafId = 0;
 	private done = false;
 
-	private audioContext: AudioContext | undefined;
-	private audioDestination: MediaStreamAudioDestinationNode | undefined;
-	private fanfare: AudioBuffer | undefined;
-
-	constructor(
-		lotteryResults: number[],
-		names: string[],
-		audio: RecorderAudio | undefined,
-	) {
+	constructor(lotteryResults: number[], names: string[]) {
 		this.lotteryResults = lotteryResults;
 		this.names = names;
 
@@ -160,38 +105,9 @@ export class DraftVideoRecorder {
 		const mimeType = pickMimeType()!;
 		this.extension = mimeType.includes("mp4") ? "mp4" : "webm";
 
-		const stream = this.canvas.captureStream(FPS);
-
-		// Route the fanfare through an AudioContext so it ends up in the video
-		// too. If any of this fails, the video just has no sound.
-		if (audio) {
-			this.audioContext = audio.context;
-			this.audioDestination = audio.destination;
-			for (const track of this.audioDestination.stream.getAudioTracks()) {
-				stream.addTrack(track);
-			}
-
-			// The destination node emits no audio at all until a source plays
-			// into it, and the muxer aligns the video timeline to the audio
-			// track, so without constant silence the whole video would get
-			// compressed into the duration of the fanfare
-			try {
-				const silence = this.audioContext.createConstantSource();
-				silence.offset.value = 0;
-				silence.connect(this.audioDestination);
-				silence.start();
-			} catch {}
-
-			fetch(FANFARE_SOUND_FILE)
-				.then((response) => response.arrayBuffer())
-				.then((buffer) => this.audioContext!.decodeAudioData(buffer))
-				.then((decoded) => {
-					this.fanfare = decoded;
-				})
-				.catch(() => {});
-		}
-
-		this.recorder = new MediaRecorder(stream, { mimeType });
+		this.recorder = new MediaRecorder(this.canvas.captureStream(FPS), {
+			mimeType,
+		});
 		this.recorder.ondataavailable = (event) => {
 			if (event.data.size > 0) {
 				this.chunks.push(event.data);
@@ -209,33 +125,6 @@ export class DraftVideoRecorder {
 	setNumRevealed(numRevealed: number) {
 		while (this.revealTimes.length < numRevealed) {
 			this.revealTimes.push(performance.now());
-		}
-	}
-
-	// Plays the fanfare through the speakers and into the recording. Returns
-	// its duration in milliseconds, or 0 if it couldn't be played (in which
-	// case the caller should fall back to a plain Audio element).
-	playFanfare() {
-		if (!this.audioContext || !this.audioDestination || !this.fanfare) {
-			return 0;
-		}
-
-		try {
-			this.audioContext.resume().catch(() => {});
-
-			const gain = this.audioContext.createGain();
-			gain.gain.value = FANFARE_VOLUME;
-			gain.connect(this.audioContext.destination);
-			gain.connect(this.audioDestination);
-
-			const source = this.audioContext.createBufferSource();
-			source.buffer = this.fanfare;
-			source.connect(gain);
-			source.start();
-
-			return Math.ceil(this.fanfare.duration * 1000);
-		} catch {
-			return 0;
 		}
 	}
 
@@ -284,7 +173,6 @@ export class DraftVideoRecorder {
 		for (const track of this.recorder.stream.getTracks()) {
 			track.stop();
 		}
-		this.audioContext?.close().catch(() => {});
 	}
 
 	private draw = () => {

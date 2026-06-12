@@ -3,8 +3,6 @@ import { ordinal, teamGradientColors } from "./draftBoardUtil";
 import {
 	createDraftVideoRecorder,
 	DraftVideoRecorder,
-	FANFARE_SOUND_FILE,
-	FANFARE_VOLUME,
 } from "./DraftVideoRecorder";
 
 const teamRowStyle = (teamIndex: number, numTeams: number) => {
@@ -20,8 +18,8 @@ const TOP_PICK_REVEAL_DELAY = 2500;
 const NUM_SLOW_PICKS = 3;
 
 // How long to keep recording after the last pick, so the video includes the
-// fanfare even if its duration is unknown
-const FALLBACK_FANFARE_MS = 5000;
+// final flip-in and the glow on the 1st pick
+const RECORDING_TAIL_MS = 2500;
 
 // Reveal later picks faster when there are many teams, so the whole reveal
 // stays under ~30 seconds, but always slow down for the top picks
@@ -62,34 +60,17 @@ export const DraftBoard = ({
 	const [video, setVideo] = useState<DraftVideo | null | undefined>(undefined);
 
 	const resultsRef = useRef<HTMLDivElement>(null);
-	const fanfarePlayed = useRef(false);
 	const recorderRef = useRef<DraftVideoRecorder | undefined>(undefined);
-	const numRevealedRef = useRef(0);
 
 	useEffect(() => {
-		let canceled = false;
-
-		createDraftVideoRecorder(lotteryResults, names).then((recorder) => {
-			// The reveal finishing before the recorder starts shouldn't happen,
-			// but if it somehow does, the video would never be finished
-			if (canceled || fanfarePlayed.current) {
-				recorder?.cancel();
-				return;
-			}
-			recorderRef.current = recorder;
-
-			// Catch up on any picks revealed while the recorder was starting
-			recorder?.setNumRevealed(numRevealedRef.current);
-		});
+		recorderRef.current = createDraftVideoRecorder(lotteryResults, names);
 
 		return () => {
-			canceled = true;
 			recorderRef.current?.cancel();
 		};
 	}, []);
 
 	useEffect(() => {
-		numRevealedRef.current = numRevealed;
 		recorderRef.current?.setNumRevealed(numRevealed);
 	}, [numRevealed]);
 
@@ -112,32 +93,17 @@ export const DraftBoard = ({
 	}, [done, numRevealed, numTeams]);
 
 	useEffect(() => {
-		if (!done || fanfarePlayed.current) {
+		if (!done) {
 			return;
 		}
-		fanfarePlayed.current = true;
 
 		const recorder = recorderRef.current;
-
-		// Play the fanfare through the recorder so it's part of the video,
-		// falling back to a plain Audio element
-		let fanfareMs = recorder?.playFanfare() ?? 0;
-		if (fanfareMs === 0) {
-			const audio = new Audio(FANFARE_SOUND_FILE);
-			audio.volume = FANFARE_VOLUME;
-
-			// Ignore autoplay restrictions
-			audio.play().catch(() => {});
-
-			fanfareMs = FALLBACK_FANFARE_MS;
-		}
-
 		if (!recorder) {
 			setVideo(null);
 			return;
 		}
 
-		// Let the recording run through the fanfare before finishing it
+		// Let the recording run through the final animations before finishing
 		const timeout = setTimeout(async () => {
 			const blob = await recorder.stop();
 			if (!blob) {
@@ -155,7 +121,7 @@ export const DraftBoard = ({
 					typeof navigator.canShare === "function" &&
 					navigator.canShare({ files: [file] }),
 			});
-		}, fanfareMs + 500);
+		}, RECORDING_TAIL_MS);
 
 		return () => {
 			clearTimeout(timeout);
