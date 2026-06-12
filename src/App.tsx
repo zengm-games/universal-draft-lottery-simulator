@@ -72,13 +72,6 @@ const presets = [
 		chances: [185, 135, 115, 95, 85, 75, 65, 60, 50, 35, 30, 25, 20, 15, 10],
 	},
 	{
-		key: "nhl2021-gpy",
-		title: "NHL 2021-present - Go Puck Yourself",
-		description: "Weighted lottery for the all 12 teams.",
-		numToPick: 12,
-		chances: [185, 135, 115, 95, 85, 75, 65, 60, 50, 35, 30, 25],
-	},
-	{
 		key: "mlb2022",
 		title: "MLB 2022-present",
 		description:
@@ -244,10 +237,6 @@ export const App = () => {
 		</>
 	);
 
-	const hideDraftBoard = () => {
-		setAnimatedResults(undefined);
-	};
-
 	return (
 		<>
 			<div
@@ -354,24 +343,9 @@ export const App = () => {
 						Sim Lottery
 					</Button>
 
-					{lotteryResults ? (
-						<Button
-							variant="danger"
-							className="ml-2"
-							onClick={() => {
-								setLotteryResults(undefined);
-								setAnimatedResults(undefined);
-							}}
-							outline
-							disabled={chances.length === 0}
-						>
-							Clear Sim
-						</Button>
-					) : null}
-				</div>
-				<div className="mt-2 sm:mt-0">
 					<Button
 						variant="success"
+						className="ml-2"
 						onClick={() => {
 							const results = simLottery(chances, numToPick);
 							setLotteryResults(results);
@@ -379,7 +353,7 @@ export const App = () => {
 						}}
 						disabled={chances.length === 0}
 					>
-						Perform Draft Lottery
+						Animated Reveal
 					</Button>
 
 					{lotteryResults ? (
@@ -404,44 +378,32 @@ export const App = () => {
 			) : (
 				<>
 					{chances.length > 0 ? (
-						<div className="container">
-							<div
-								className="mt-2 overflow-x-auto"
-								style={animatedResults ? {} : {}}
-							>
-								<Table
-									chances={chances}
-									loadingProbs={loadingProbs}
-									lotteryResults={lotteryResults}
-									names={names}
-									probs={probs}
-									setChances={setChances}
-									setLotteryResults={setLotteryResults}
-									setNames={setNames}
-									setPresetKey={setPresetKey}
-								/>
-							</div>
-							<div
-								className="mt-2 overflow-x-auto"
-								style={animatedResults ? {} : { visibility: "hidden" }}
-							>
-								<DraftBoard
-									chances={chances}
-									loadingProbs={loadingProbs}
-									lotteryResults={lotteryResults}
-									names={names}
-									probs={probs}
-									setChances={setChances}
-									setLotteryResults={setLotteryResults}
-									setNames={setNames}
-									setPresetKey={setPresetKey}
-									hideDraftBoard={hideDraftBoard}
-								/>
-							</div>
+						<div className="mt-2 overflow-x-auto">
+							<Table
+								chances={chances}
+								loadingProbs={loadingProbs}
+								lotteryResults={lotteryResults}
+								names={names}
+								probs={probs}
+								setChances={setChances}
+								setLotteryResults={setLotteryResults}
+								setNames={setNames}
+								setPresetKey={setPresetKey}
+							/>
 						</div>
 					) : (
 						<div className="my-3">You should add some teams...</div>
 					)}
+
+					{animatedResults ? (
+						<DraftBoard
+							lotteryResults={animatedResults}
+							names={names}
+							onClose={() => {
+								setAnimatedResults(undefined);
+							}}
+						/>
+					) : null}
 
 					{chances.length > 0 ? (
 						<div className="my-3">{addClearButtons("bottom")}</div>

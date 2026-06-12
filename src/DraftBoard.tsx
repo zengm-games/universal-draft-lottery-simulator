@@ -1,4 +1,4 @@
-import { StateUpdater, useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 
 const ordinal = (x: number) => {
 	let suffix;
@@ -18,164 +18,170 @@ const ordinal = (x: number) => {
 	return x.toString() + suffix;
 };
 
-type DraftBoardProps = {
-	chances: number[];
-	loadingProbs: boolean;
-	lotteryResults: number[] | undefined;
-	names: string[];
-	probs: number[][];
-	setChances: StateUpdater<number[]>;
-	setLotteryResults: StateUpdater<number[] | undefined>;
-	setNames: StateUpdater<string[]>;
-	setPresetKey: StateUpdater<string>;
-	hideDraftBoard: StateUpdater<boolean>;
+const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+
+// Evenly-spaced hues guarantee every pair of teams is at least 360/numTeams
+// degrees apart, and visiting them with a stride near numTeams/φ (kept
+// coprime with numTeams so every hue is used once) makes consecutive team
+// indexes very different colors
+const teamRowStyle = (teamIndex: number, numTeams: number) => {
+	let stride = Math.max(1, Math.round(numTeams / 1.618));
+	while (gcd(stride, numTeams) !== 1) {
+		stride += 1;
+	}
+
+	const hue = Math.round(((teamIndex * stride) % numTeams) * (360 / numTeams));
+
+	return {
+		background: `linear-gradient(180deg, hsl(${hue}, 65%, 45%) 0%, hsl(${hue}, 70%, 27%) 100%)`,
+	};
 };
 
-export const currentYear = new Date().getFullYear();
+const FIRST_REVEAL_DELAY = 1200;
+const TOP_PICK_REVEAL_DELAY = 2500;
+const NUM_SLOW_PICKS = 3;
 
-const rowColors = [
-	"draftboard__row-bkg-1",
-	"draftboard__row-bkg-2",
-	"draftboard__row-bkg-3",
-	"draftboard__row-bkg-4",
-	"draftboard__row-bkg-5",
-	"draftboard__row-bkg-6",
-	"draftboard__row-bkg-7",
-	"draftboard__row-bkg-8",
-	"draftboard__row-bkg-9",
-	"draftboard__row-bkg-10",
-	"draftboard__row-bkg-11",
-	"draftboard__row-bkg-12",
-	"draftboard__row-bkg-13",
-	"draftboard__row-bkg-14",
-];
-const rowClasses = [
-	"draftboard__row-1",
-	"draftboard__row-2",
-	"draftboard__row-3",
-	"draftboard__row-4",
-	"draftboard__row-5",
-	"draftboard__row-6",
-	"draftboard__row-7",
-	"draftboard__row-8",
-	"draftboard__row-9",
-	"draftboard__row-10",
-	"draftboard__row-11",
-	"draftboard__row-12",
-	"draftboard__row-13",
-	"draftboard__row-14",
-];
-
-export const DraftBoard = (props: DraftBoardProps) => {
-	const [revealRow, setRevealRow] = useState(14);
-	let soundPlayed = false;
-	/*
-	const [alpha0, setAlpha0] = useState(0);
-	const [alpha1, setAlpha1] = useState(0.0);
-	const [alpha2, setAlpha2] = useState(0.0);
-	const [alpha3, setAlpha3] = useState(0.0);
-	const [alpha4, setAlpha4] = useState(0.0);
-	const [alpha5, setAlpha5] = useState(0.0);
-	const [alpha6, setAlpha6] = useState(0.0);
-	const [alpha7, setAlpha7] = useState(0.0);
-	const [alpha8, setAlpha8] = useState(0.0);
-	const [alpha9, setAlpha9] = useState(0.0);
-	const [alpha10, setAlpha10] = useState(0.0);
-	const [alpha11, setAlpha11] = useState(0.0);
-	const [alpha12, setAlpha12] = useState(0.0);
-	const [alpha13, setAlpha13] = useState(0.0);
-
-	const alphas:Array<number> = [];
-	for (let i=0; i < 14; i++) {
-		alphas.push(eval(`alpha${i}`));
+// Reveal later picks faster when there are many teams, so the whole reveal
+// stays under ~30 seconds, but always slow down for the top picks
+const revealDelay = (pick: number, numTeams: number) => {
+	if (pick <= NUM_SLOW_PICKS) {
+		return TOP_PICK_REVEAL_DELAY;
 	}
-	*/
-	const [triggerAnimation, setTriggerAnimation] = useState(false);
+
+	return Math.min(2000, Math.max(700, Math.round(24000 / numTeams)));
+};
+
+type DraftBoardProps = {
+	lotteryResults: number[];
+	names: string[];
+	onClose: () => void;
+};
+
+export const DraftBoard = ({
+	lotteryResults,
+	names,
+	onClose,
+}: DraftBoardProps) => {
+	const numTeams = lotteryResults.length;
+
+	// Picks are revealed one at a time, from the last pick up to the 1st
+	const [numRevealed, setNumRevealed] = useState(0);
+	const done = numRevealed >= numTeams;
+
+	const resultsRef = useRef<HTMLDivElement>(null);
+	const fanfarePlayed = useRef(false);
 
 	useEffect(() => {
-		if (props.lotteryResults) {
-			setTimeout(() => {
-				setTriggerAnimation(true);
-			}, 1000);
-			if (!soundPlayed) {
-				let audio = new Audio("success-fanfare-trumpets-6185.mp3");
-				audio.play();
-				soundPlayed = true;
+		if (done) {
+			return;
+		}
+
+		const nextPick = numTeams - numRevealed;
+		const delay =
+			numRevealed === 0 ? FIRST_REVEAL_DELAY : revealDelay(nextPick, numTeams);
+
+		const timeout = setTimeout(() => {
+			setNumRevealed(numRevealed + 1);
+		}, delay);
+
+		return () => {
+			clearTimeout(timeout);
+		};
+	}, [done, numRevealed, numTeams]);
+
+	useEffect(() => {
+		if (done && !fanfarePlayed.current) {
+			fanfarePlayed.current = true;
+			const audio = new Audio("success-fanfare-trumpets-6185.mp3");
+			audio.volume = 0.6;
+
+			// Ignore autoplay restrictions
+			audio.play().catch(() => {});
+		}
+	}, [done]);
+
+	// If there are too many teams to fit on screen, keep the newly revealed
+	// pick in view. Picks reveal bottom-up, so the first revealed row in
+	// document order is the most recent one.
+	useEffect(() => {
+		if (numRevealed > 0) {
+			const row = resultsRef.current?.querySelector(
+				".draftboard__row--revealed",
+			);
+			row?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+		}
+	}, [numRevealed]);
+
+	useEffect(() => {
+		const listener = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				onClose();
 			}
-		} else {
-			setTriggerAnimation(false);
-			setRevealRow(14);
-		}
-	}, [props.lotteryResults]);
+		};
 
-	useEffect(() => {
-		if (triggerAnimation) {
-			// @ts-ignore
-			setRevealRow(props.lotteryResults?.length);
-		}
-	}, [triggerAnimation]);
+		window.addEventListener("keydown", listener);
 
-	useEffect(() => {
-		if (triggerAnimation && revealRow >= 0) {
-			console.log(`revealRow: ${revealRow}`);
-			setTimeout(() => {
-				setRevealRow(revealRow - 1);
-			}, 2500);
-		}
-	}, [revealRow]);
-	/*
-	useEffect(() => {
-		if (triggerAnimation) {
-			console.log('animating')
-			for (let i=13; i >= 0; i--) {
-				console.log(`animating ${rowClasses[i]}`);
-				gsap.to(rowClasses[i], {opacity: 1, duration: 1, delay: i * 0.2})
-			}  
-		}
-	}, [triggerAnimation]);
-	*/
+		return () => {
+			window.removeEventListener("keydown", listener);
+		};
+	}, [onClose]);
 
 	return (
 		<div className="overlay">
-			<div className="draftboard">
-				<div className="draftboard__title">
-					<div className="draftboard__title-text">
-						{currentYear}-{currentYear + 1} Draft Results
-					</div>
-				</div>
-				<div className="draftboard__results">
-					{props.lotteryResults
-						? props.lotteryResults.map((team, i) => {
-								const name = props.names[team];
-								const pick = i + 1;
-								const rowclass = `${rowColors[team]}`;
-								const row = `${rowClasses[i]}`;
-								console.log(`rendering ${row}`);
-								//const rowstyle = { backgroundColor: `linear-gradient(0deg, ${teamColors[team][0]} 0%, ${teamColors[team][1]} 100%)` };
-								return (
-									<div
-										key={`row-${i}`}
-										className={`draftboard__row ${row} ${
-											revealRow < i ? "show" : ""
-										}`}
-									>
-										<div className={`draftboard__row ${rowclass}`}>
-											<div className="draftboard__row-pick">
-												{ordinal(pick)}
-											</div>
-											<div className={`draftboard__row-team`}>{name}</div>
+			<div className="draftboard" style={{ "--num-teams": numTeams } as any}>
+				<div className="draftboard__title">Draft Lottery Results</div>
+				<div className="draftboard__results" ref={resultsRef}>
+					{lotteryResults.map((teamIndex, i) => {
+						const pick = i + 1;
+						const revealed = i >= numTeams - numRevealed;
+
+						const rowClasses = ["draftboard__row"];
+						if (revealed) {
+							rowClasses.push("draftboard__row--revealed");
+						}
+						if (revealed && pick === 1) {
+							rowClasses.push("draftboard__row--first");
+						}
+
+						return (
+							<div key={teamIndex} className={rowClasses.join(" ")}>
+								<div
+									className={`draftboard__pick${
+										pick <= 3 ? ` draftboard__pick--${pick}` : ""
+									}`}
+								>
+									{ordinal(pick)}
+								</div>
+								<div className="draftboard__slot">
+									{revealed ? (
+										<div
+											className="draftboard__team"
+											style={teamRowStyle(teamIndex, numTeams)}
+										>
+											{names[teamIndex] ?? `Team ${teamIndex + 1}`}
 										</div>
-									</div>
-								);
-						  })
-						: null}
+									) : null}
+								</div>
+							</div>
+						);
+					})}
 				</div>
-				<div className="draftboard__button-container">
+				<div className="draftboard__buttons">
+					{!done ? (
+						<button
+							className="draftboard__button"
+							type="button"
+							onClick={() => {
+								setNumRevealed(numTeams);
+							}}
+						>
+							Skip
+						</button>
+					) : null}
 					<button
 						className="draftboard__button"
-						onClick={() => {
-							props.hideDraftBoard(false);
-						}}
+						type="button"
+						onClick={onClose}
 					>
 						Close
 					</button>
