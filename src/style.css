@@ -75,6 +75,9 @@
 	padding: 0.5rem;
 	box-shadow: 0 0 1.5rem rgba(0, 0, 0, 0.8);
 	overflow-y: auto;
+	/* The flip-in animation briefly projects wider than the container, which
+	   would otherwise flash a horizontal scrollbar and shift the rows */
+	overflow-x: hidden;
 	max-height: calc(100vh - 11rem);
 }
 
