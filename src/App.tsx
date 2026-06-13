@@ -397,6 +397,8 @@ export const App = () => {
 
 					{animatedResults ? (
 						<DraftBoard
+							chances={chances}
+							numToPick={numToPick}
 							lotteryResults={animatedResults}
 							names={names}
 							onClose={() => {

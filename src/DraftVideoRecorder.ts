@@ -1,6 +1,8 @@
 import { ordinal, teamGradientColors } from "./draftBoardUtil";
+import { firstPickOdds, formatOdds } from "./draftLotteryOdds";
 
-const WIDTH = 720;
+const ODDS_PANEL_WIDTH = 230;
+const WIDTH = 720 + ODDS_PANEL_WIDTH;
 const MAX_HEIGHT = 1280;
 const FPS = 30;
 const HEADER_HEIGHT = 80;
@@ -31,13 +33,15 @@ export const videoRecordingSupported = () =>
 export const createDraftVideoRecorder = (
 	lotteryResults: number[],
 	names: string[],
+	chances: number[],
+	numToPick: number,
 ): DraftVideoRecorder | undefined => {
 	if (!videoRecordingSupported()) {
 		return undefined;
 	}
 
 	try {
-		return new DraftVideoRecorder(lotteryResults, names);
+		return new DraftVideoRecorder(lotteryResults, names, chances, numToPick);
 	} catch {
 		return undefined;
 	}
@@ -68,6 +72,9 @@ export class DraftVideoRecorder {
 
 	private lotteryResults: number[];
 	private names: string[];
+	private chances: number[];
+	private numToPick: number;
+	private odds: (number | undefined)[];
 	private rowHeight: number;
 
 	private canvas: HTMLCanvasElement;
@@ -77,9 +84,17 @@ export class DraftVideoRecorder {
 	private rafId = 0;
 	private done = false;
 
-	constructor(lotteryResults: number[], names: string[]) {
+	constructor(
+		lotteryResults: number[],
+		names: string[],
+		chances: number[],
+		numToPick: number,
+	) {
 		this.lotteryResults = lotteryResults;
 		this.names = names;
+		this.chances = chances;
+		this.numToPick = numToPick;
+		this.odds = firstPickOdds(chances, numToPick, lotteryResults, 0);
 
 		const numTeams = lotteryResults.length;
 		this.rowHeight = Math.max(
@@ -123,9 +138,20 @@ export class DraftVideoRecorder {
 	private revealTimes: number[] = [];
 
 	setNumRevealed(numRevealed: number) {
+		if (this.revealTimes.length >= numRevealed) {
+			return;
+		}
+
 		while (this.revealTimes.length < numRevealed) {
 			this.revealTimes.push(performance.now());
 		}
+
+		this.odds = firstPickOdds(
+			this.chances,
+			this.numToPick,
+			this.lotteryResults,
+			numRevealed,
+		);
 	}
 
 	// Finish recording and return the video, or undefined if recording failed
@@ -193,8 +219,11 @@ export class DraftVideoRecorder {
 		ctx.textBaseline = "middle";
 		ctx.fillText("DRAFT LOTTERY RESULTS", canvas.width / 2, HEADER_HEIGHT / 2);
 
+		this.renderOddsPanel();
+
 		const badgeWidth = Math.round(rowHeight * 1.4);
-		const slotX = PADDING + badgeWidth + ROW_GAP;
+		const badgeX = ODDS_PANEL_WIDTH + PADDING;
+		const slotX = badgeX + badgeWidth + ROW_GAP;
 		const slotWidth = canvas.width - PADDING - slotX;
 
 		for (let i = 0; i < numTeams; i++) {
@@ -212,13 +241,13 @@ export class DraftVideoRecorder {
 			} else {
 				ctx.fillStyle = "#e2e8f0";
 			}
-			roundedRectPath(ctx, PADDING, y, badgeWidth, rowHeight, 4);
+			roundedRectPath(ctx, badgeX, y, badgeWidth, rowHeight, 4);
 			ctx.fill();
 
 			ctx.fillStyle = "#1e293b";
 			ctx.font = `bold ${Math.round(rowHeight * 0.35)}px sans-serif`;
 			ctx.textAlign = "center";
-			ctx.fillText(ordinal(pick), PADDING + badgeWidth / 2, y + rowHeight / 2);
+			ctx.fillText(ordinal(pick), badgeX + badgeWidth / 2, y + rowHeight / 2);
 
 			// Empty slot
 			ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
@@ -272,6 +301,102 @@ export class DraftVideoRecorder {
 				slotX + 12,
 				y + rowHeight / 2,
 			);
+
+			ctx.restore();
+		}
+	}
+
+	// The odds panel in the left margin, mirroring the one on the live board
+	private renderOddsPanel() {
+		const { ctx, rowHeight } = this;
+		const numTeams = this.lotteryResults.length;
+		const numRevealed = this.revealTimes.length;
+
+		ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+		ctx.font = "bold 13px sans-serif";
+		ctx.textAlign = "left";
+		ctx.fillText("1ST PICK ODDS", PADDING, HEADER_HEIGHT - 8);
+
+		const placedPicks = new Map<number, number>();
+		for (let i = numTeams - numRevealed; i < numTeams; i++) {
+			placedPicks.set(this.lotteryResults[i], i + 1);
+		}
+
+		const maxOdds = Math.max(
+			...this.odds.map((teamOdds) => teamOdds ?? 0),
+			Number.MIN_VALUE,
+		);
+
+		const fontSize = Math.min(15, Math.max(11, Math.round(rowHeight * 0.32)));
+		const chipSize = 11;
+		const nameX = PADDING + chipSize + 6;
+		const valueX = ODDS_PANEL_WIDTH - PADDING;
+		const showMeters = rowHeight >= 30;
+
+		for (let t = 0; t < numTeams; t++) {
+			const y = HEADER_HEIGHT + PADDING + t * (rowHeight + ROW_GAP);
+			const teamOdds = this.odds[t];
+			const placed = teamOdds === undefined;
+			const textY = y + rowHeight / 2 - (showMeters ? 4 : 0);
+
+			ctx.save();
+			if (placed) {
+				ctx.globalAlpha = 0.35;
+			}
+
+			ctx.fillStyle = teamGradientColors(t, numTeams)[0];
+			roundedRectPath(
+				ctx,
+				PADDING,
+				textY - chipSize / 2,
+				chipSize,
+				chipSize,
+				2,
+			);
+			ctx.fill();
+
+			// Clip so long names don't run into the odds value
+			ctx.save();
+			ctx.beginPath();
+			ctx.rect(nameX, y, valueX - 58 - nameX, rowHeight);
+			ctx.clip();
+			ctx.fillStyle = "#fff";
+			ctx.font = `600 ${fontSize}px sans-serif`;
+			ctx.fillText(this.names[t] ?? `Team ${t + 1}`, nameX, textY);
+			ctx.restore();
+
+			ctx.fillStyle = "#fff";
+			ctx.font = `bold ${fontSize}px sans-serif`;
+			ctx.textAlign = "right";
+			const pick = placedPicks.get(t);
+			ctx.fillText(
+				placed
+					? pick !== undefined
+						? ordinal(pick)
+						: ""
+					: formatOdds(teamOdds),
+				valueX,
+				textY,
+			);
+			ctx.textAlign = "left";
+
+			if (showMeters && !placed) {
+				const barWidth = valueX - PADDING;
+				const barY = y + rowHeight - 8;
+				ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+				roundedRectPath(ctx, PADDING, barY, barWidth, 3, 1.5);
+				ctx.fill();
+				ctx.fillStyle = "#d6a514";
+				roundedRectPath(
+					ctx,
+					PADDING,
+					barY,
+					Math.max(1, (teamOdds / maxOdds) * barWidth),
+					3,
+					1.5,
+				);
+				ctx.fill();
+			}
 
 			ctx.restore();
 		}

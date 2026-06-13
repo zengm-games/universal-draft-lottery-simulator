@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { ordinal, teamGradientColors } from "./draftBoardUtil";
+import { firstPickOdds, formatOdds } from "./draftLotteryOdds";
 import {
 	createDraftVideoRecorder,
 	DraftVideoRecorder,
@@ -32,6 +33,8 @@ const revealDelay = (pick: number, numTeams: number) => {
 };
 
 type DraftBoardProps = {
+	chances: number[];
+	numToPick: number;
 	lotteryResults: number[];
 	names: string[];
 	onClose: () => void;
@@ -45,6 +48,8 @@ type DraftVideo = {
 };
 
 export const DraftBoard = ({
+	chances,
+	numToPick,
 	lotteryResults,
 	names,
 	onClose,
@@ -55,6 +60,25 @@ export const DraftBoard = ({
 	const [numRevealed, setNumRevealed] = useState(0);
 	const done = numRevealed >= numTeams;
 
+	// Each unplaced team's odds of the 1st pick, given the reveals so far
+	const odds = useMemo(
+		() => firstPickOdds(chances, numToPick, lotteryResults, numRevealed),
+		[chances, numToPick, lotteryResults, numRevealed],
+	);
+	const maxOdds = Math.max(
+		...odds.map((teamOdds) => teamOdds ?? 0),
+		Number.MIN_VALUE,
+	);
+
+	// Where each already-revealed team landed, for the odds panel
+	const revealedPicks = useMemo(() => {
+		const picks = new Map<number, number>();
+		for (let i = numTeams - numRevealed; i < numTeams; i++) {
+			picks.set(lotteryResults[i], i + 1);
+		}
+		return picks;
+	}, [lotteryResults, numRevealed, numTeams]);
+
 	// undefined while there might still be a video coming, null when there
 	// won't be one
 	const [video, setVideo] = useState<DraftVideo | null | undefined>(undefined);
@@ -63,7 +87,12 @@ export const DraftBoard = ({
 	const recorderRef = useRef<DraftVideoRecorder | undefined>(undefined);
 
 	useEffect(() => {
-		recorderRef.current = createDraftVideoRecorder(lotteryResults, names);
+		recorderRef.current = createDraftVideoRecorder(
+			lotteryResults,
+			names,
+			chances,
+			numToPick,
+		);
 
 		return () => {
 			recorderRef.current?.cancel();
@@ -166,41 +195,83 @@ export const DraftBoard = ({
 		<div className="overlay">
 			<div className="draftboard" style={{ "--num-teams": numTeams } as any}>
 				<div className="draftboard__title">Draft Lottery Results</div>
-				<div className="draftboard__results" ref={resultsRef}>
-					{lotteryResults.map((teamIndex, i) => {
-						const pick = i + 1;
-						const revealed = i >= numTeams - numRevealed;
+				<div className="draftboard__main">
+					<div className="draftboard__odds">
+						<div className="draftboard__odds-title">1st Pick Odds</div>
+						{chances.map((_chance, teamIndex) => {
+							const teamOdds = odds[teamIndex];
+							const placed = teamOdds === undefined;
+							const pick = revealedPicks.get(teamIndex);
 
-						const rowClasses = ["draftboard__row"];
-						if (revealed) {
-							rowClasses.push("draftboard__row--revealed");
-						}
-						if (revealed && pick === 1) {
-							rowClasses.push("draftboard__row--first");
-						}
-
-						return (
-							<div key={teamIndex} className={rowClasses.join(" ")}>
+							return (
 								<div
-									className={`draftboard__pick${
-										pick <= 3 ? ` draftboard__pick--${pick}` : ""
+									key={teamIndex}
+									className={`draftboard__odds-row${
+										placed ? " draftboard__odds-row--placed" : ""
 									}`}
 								>
-									{ordinal(pick)}
-								</div>
-								<div className="draftboard__slot">
-									{revealed ? (
+									<span
+										className="draftboard__odds-chip"
+										style={teamRowStyle(teamIndex, numTeams)}
+									/>
+									<span className="draftboard__odds-name">
+										{names[teamIndex] ?? `Team ${teamIndex + 1}`}
+									</span>
+									<span className="draftboard__odds-value">
+										{placed
+											? pick !== undefined
+												? ordinal(pick)
+												: ""
+											: formatOdds(teamOdds)}
+									</span>
+									<div className="draftboard__odds-meter">
 										<div
-											className="draftboard__team"
-											style={teamRowStyle(teamIndex, numTeams)}
-										>
-											{names[teamIndex] ?? `Team ${teamIndex + 1}`}
-										</div>
-									) : null}
+											className="draftboard__odds-meter-fill"
+											style={{
+												width: `${placed ? 0 : (teamOdds / maxOdds) * 100}%`,
+											}}
+										/>
+									</div>
 								</div>
-							</div>
-						);
-					})}
+							);
+						})}
+					</div>
+					<div className="draftboard__results" ref={resultsRef}>
+						{lotteryResults.map((teamIndex, i) => {
+							const pick = i + 1;
+							const revealed = i >= numTeams - numRevealed;
+
+							const rowClasses = ["draftboard__row"];
+							if (revealed) {
+								rowClasses.push("draftboard__row--revealed");
+							}
+							if (revealed && pick === 1) {
+								rowClasses.push("draftboard__row--first");
+							}
+
+							return (
+								<div key={teamIndex} className={rowClasses.join(" ")}>
+									<div
+										className={`draftboard__pick${
+											pick <= 3 ? ` draftboard__pick--${pick}` : ""
+										}`}
+									>
+										{ordinal(pick)}
+									</div>
+									<div className="draftboard__slot">
+										{revealed ? (
+											<div
+												className="draftboard__team"
+												style={teamRowStyle(teamIndex, numTeams)}
+											>
+												{names[teamIndex] ?? `Team ${teamIndex + 1}`}
+											</div>
+										) : null}
+									</div>
+								</div>
+							);
+						})}
+					</div>
 				</div>
 				<div className="draftboard__buttons">
 					{!done ? (
