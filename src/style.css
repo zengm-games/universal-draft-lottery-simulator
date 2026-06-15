@@ -24,3 +24,258 @@
 		font-family: Kanit;
 	}
 }
+
+.overlay {
+	background-color: rgba(15, 23, 42, 0.9);
+	position: fixed;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+	z-index: 1000;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+
+.draftboard {
+	/* Scale rows to fit the screen for any number of teams. The 0.25rem
+	   subtracted at the end accounts for the gap between rows. */
+	--row-height: clamp(
+		2rem,
+		calc((100vh - 14rem) / var(--num-teams, 14) - 0.25rem),
+		3.5rem
+	);
+
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	color: #fff;
+	padding: 1rem;
+	width: min(56rem, 96vw);
+}
+
+.draftboard__main {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.75rem;
+}
+
+.draftboard__odds {
+	width: 15rem;
+	flex-shrink: 0;
+	background-color: rgba(255, 255, 255, 0.08);
+	border-radius: 0.5rem;
+	padding: 0.5rem 0.75rem;
+	box-shadow: 0 0 1.5rem rgba(0, 0, 0, 0.8);
+	overflow-y: auto;
+	max-height: calc(100vh - 11rem);
+}
+
+.draftboard__odds-title {
+	font-size: 0.75rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	color: rgba(255, 255, 255, 0.7);
+	margin-bottom: 0.375rem;
+}
+
+.draftboard__odds-row {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	column-gap: 0.375rem;
+	align-items: center;
+	padding: 0.25rem 0;
+	transition: opacity 0.5s;
+}
+
+.draftboard__odds-row--placed {
+	opacity: 0.35;
+}
+
+.draftboard__odds-chip {
+	width: 0.625rem;
+	height: 0.625rem;
+	border-radius: 0.125rem;
+}
+
+.draftboard__odds-name {
+	font-size: 0.8rem;
+	font-weight: 600;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.draftboard__odds-value {
+	font-size: 0.8rem;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.draftboard__odds-meter {
+	grid-column: 1 / -1;
+	height: 0.25rem;
+	background-color: rgba(255, 255, 255, 0.12);
+	border-radius: 0.125rem;
+	overflow: hidden;
+}
+
+.draftboard__odds-meter-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #d6a514 0%, #fde68a 100%);
+	border-radius: 0.125rem;
+	transition: width 0.6s ease;
+}
+
+@media (max-width: 640px) {
+	.draftboard__odds {
+		display: none;
+	}
+}
+
+.draftboard__title {
+	font-family: Kanit, sans-serif;
+	text-align: center;
+	font-size: clamp(1.5rem, 4vw, 2.5rem);
+	font-weight: 700;
+	margin-bottom: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.draftboard__results {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	background-color: rgba(255, 255, 255, 0.08);
+	border-radius: 0.5rem;
+	padding: 0.5rem;
+	box-shadow: 0 0 1.5rem rgba(0, 0, 0, 0.8);
+	overflow-y: auto;
+	/* The flip-in animation briefly projects wider than the container, which
+	   would otherwise flash a horizontal scrollbar and shift the rows */
+	overflow-x: hidden;
+	max-height: calc(100vh - 11rem);
+}
+
+.draftboard__row {
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+	gap: 0.25rem;
+	height: var(--row-height);
+	flex-shrink: 0;
+	font-size: calc(var(--row-height) * 0.45);
+	font-weight: 700;
+}
+
+.draftboard__pick {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: calc(var(--row-height) * 1.4);
+	flex-shrink: 0;
+	background-color: #e2e8f0;
+	color: #1e293b;
+	font-size: calc(var(--row-height) * 0.35);
+	border-radius: 0.25rem;
+}
+
+.draftboard__pick--1 {
+	background: linear-gradient(180deg, #fde68a 0%, #d6a514 100%);
+}
+
+.draftboard__pick--2 {
+	background: linear-gradient(180deg, #f1f5f9 0%, #94a3b8 100%);
+}
+
+.draftboard__pick--3 {
+	background: linear-gradient(180deg, #e8ae80 0%, #b26a3d 100%);
+}
+
+.draftboard__slot {
+	flex-grow: 1;
+	min-width: 0;
+	background-color: rgba(0, 0, 0, 0.35);
+	box-shadow: inset 0 0 0.5rem rgba(0, 0, 0, 0.5);
+	border-radius: 0.25rem;
+	perspective: 40rem;
+}
+
+.draftboard__team {
+	display: flex;
+	align-items: center;
+	height: 100%;
+	padding-left: 0.75rem;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	border-radius: 0.25rem;
+	text-shadow: 0 0 0.3rem rgba(0, 0, 0, 0.8);
+	animation: draftboard-flip-in 0.6s ease-out both;
+	transform-origin: center bottom;
+}
+
+@keyframes draftboard-flip-in {
+	from {
+		opacity: 0;
+		transform: rotateX(-90deg);
+	}
+
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+.draftboard__row--first {
+	animation: draftboard-first-glow 1.5s ease-out 0.3s;
+}
+
+@keyframes draftboard-first-glow {
+	0% {
+		box-shadow: 0 0 0 0 rgba(253, 230, 138, 0);
+	}
+
+	30% {
+		box-shadow: 0 0 1.5rem 0.25rem rgba(253, 230, 138, 0.9);
+	}
+
+	100% {
+		box-shadow: 0 0 0 0 rgba(253, 230, 138, 0);
+	}
+}
+
+.draftboard__buttons {
+	display: flex;
+	justify-content: center;
+	gap: 0.75rem;
+	margin-top: 1rem;
+}
+
+.draftboard__button {
+	color: #fff;
+	border: 1px solid rgba(255, 255, 255, 0.6);
+	border-radius: 0.375rem;
+	padding: 0.5rem 1.5rem;
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.draftboard__button:hover {
+	color: #fff;
+	background-color: rgba(255, 255, 255, 0.15);
+	border-color: #fff;
+}
+
+.draftboard__status {
+	text-align: center;
+	color: rgba(255, 255, 255, 0.7);
+	font-size: 0.875rem;
+	margin-top: 0.5rem;
+}

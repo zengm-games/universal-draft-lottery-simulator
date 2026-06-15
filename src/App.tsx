@@ -4,6 +4,7 @@ import { Button } from "./Button";
 // @ts-expect-error
 import MyWorker from "./worker?worker&inline";
 import { Table } from "./Table";
+import { DraftBoard } from "./DraftBoard";
 
 const presets = [
 	{
@@ -146,6 +147,9 @@ export const App = () => {
 		preset?.numToPick ?? 0,
 	);
 	const [lotteryResults, setLotteryResults] = useState<number[] | undefined>();
+	const [animatedResults, setAnimatedResults] = useState<
+		number[] | undefined
+	>();
 	const [names, setNames] = useLocalStorageState("names", () =>
 		getDefaultNames(chances.length),
 	);
@@ -180,6 +184,7 @@ export const App = () => {
 
 	const onAddTeam = (direction: "top" | "bottom") => () => {
 		setLotteryResults(undefined);
+		setAnimatedResults(undefined);
 
 		if (direction === "bottom") {
 			setChances([...chances, chances[chances.length - 1] ?? 1]);
@@ -203,6 +208,7 @@ export const App = () => {
 
 	const onClearTeams = () => {
 		setLotteryResults(undefined);
+		setAnimatedResults(undefined);
 		setChances([]);
 		setNames([]);
 		setPresetKey("custom");
@@ -251,6 +257,7 @@ export const App = () => {
 
 							if (preset) {
 								setLotteryResults(undefined);
+								setAnimatedResults(undefined);
 								setPresetKey(preset.key);
 								setChances(preset.chances);
 								setNumToPick(preset.numToPick);
@@ -296,6 +303,7 @@ export const App = () => {
 						min={0}
 						onChange={(event) => {
 							setLotteryResults(undefined);
+							setAnimatedResults(undefined);
 							setPresetKey("custom");
 							const number = (event.target as any).valueAsNumber;
 							if (number < 0) {
@@ -335,12 +343,26 @@ export const App = () => {
 						Sim Lottery
 					</Button>
 
+					<Button
+						variant="success"
+						className="ml-2"
+						onClick={() => {
+							const results = simLottery(chances, numToPick);
+							setLotteryResults(results);
+							setAnimatedResults(results);
+						}}
+						disabled={chances.length === 0}
+					>
+						Animated Reveal
+					</Button>
+
 					{lotteryResults ? (
 						<Button
 							variant="danger"
 							className="ml-2"
 							onClick={() => {
 								setLotteryResults(undefined);
+								setAnimatedResults(undefined);
 							}}
 							outline
 							disabled={chances.length === 0}
@@ -372,6 +394,18 @@ export const App = () => {
 					) : (
 						<div className="my-3">You should add some teams...</div>
 					)}
+
+					{animatedResults ? (
+						<DraftBoard
+							chances={chances}
+							numToPick={numToPick}
+							lotteryResults={animatedResults}
+							names={names}
+							onClose={() => {
+								setAnimatedResults(undefined);
+							}}
+						/>
+					) : null}
 
 					{chances.length > 0 ? (
 						<div className="my-3">{addClearButtons("bottom")}</div>
