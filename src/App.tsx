@@ -327,7 +327,7 @@ export const App = () => {
 				</>
 			) : null}
 
-			<div className="mt-3 sm:flex">
+			<div className="mt-3">
 				<div className="flex gap-2">
 					{addClearButtons("top")}
 					<Button variant="secondary" outline className="mr-2" onClick={() => {}}>
@@ -335,7 +335,7 @@ export const App = () => {
 					</Button>
 				</div>
 
-				<div className="mt-2 sm:mt-0">
+				<div className="mt-2">
 					<Button
 						variant="success"
 						onClick={() => {
