@@ -128,7 +128,7 @@ const useLocalStorageState = (key: string, defaultValue: any) => {
 };
 
 export const App = () => {
-	const [presetKey, setPresetKey] = useLocalStorageState("presetKey", "nba2019");
+	const [presetKey, setPresetKey] = useLocalStorageState("presetKey", "nba2027");
 	const preset = presets.find((preset) => preset.key === presetKey);
 
 	const [chances, setChances] = useLocalStorageState("chances", preset?.chances ?? []);
