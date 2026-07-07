@@ -1,7 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import { simLottery } from "./simLottery";
 import { Button } from "./Button";
-// @ts-expect-error
 import MyWorker from "./worker?worker&inline";
 import { Table } from "./Table";
 

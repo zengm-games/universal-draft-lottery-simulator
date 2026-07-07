@@ -1,22 +1,32 @@
 {
 	"compilerOptions": {
+		// Based on https://www.totaltypescript.com/tsconfig-cheat-sheet
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"target": "esnext",
+		"allowJs": true,
+		"resolveJsonModule": true,
+		"moduleDetection": "force",
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+		"noImplicitOverride": true,
+		"module": "preserve",
+		"noEmit": true,
+
+		// Extra strictness
+		"noFallthroughCasesInSwitch": true,
+		"noUncheckedIndexedAccess": true,
+		"noUnusedLocals": true,
+
+		// Maybe would be nice, but too much legacy crap
+		"useUnknownInCatchVariables": false,
+
+		"allowImportingTsExtensions": true,
+		"erasableSyntaxOnly": true,
+		"lib": ["esnext", "dom"],
 		"jsx": "react-jsx",
 		"jsxImportSource": "preact",
-		"target": "ESNext",
-		"useDefineForClassFields": true,
-		"module": "ESNext",
-		"lib": ["ESNext", "DOM"],
-		"moduleResolution": "Node",
-		"strict": true,
-		"sourceMap": true,
-		"resolveJsonModule": true,
-		"isolatedModules": true,
-		"esModuleInterop": true,
-		"noEmit": true,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true,
-		"skipLibCheck": true,
-		"importsNotUsedAsValues": "error",
-		"noImplicitOverride": true
-	}
+		"types": ["vite/client"]
+	},
+	"include": ["src"]
 }

@@ -1,4 +1,4 @@
-import { StateUpdater, useState } from "preact/hooks";
+import { type Dispatch, type StateUpdater, useState } from "preact/hooks";
 import { checkNamesAreAllDefault, getDefaultNames } from "./App";
 
 const ordinal = (x: number) => {
@@ -37,10 +37,10 @@ type TableProps = {
 	lotteryResults: number[] | undefined;
 	names: string[];
 	probs: number[][];
-	setChances: StateUpdater<number[]>;
-	setLotteryResults: StateUpdater<number[] | undefined>;
-	setNames: StateUpdater<string[]>;
-	setPresetKey: StateUpdater<string>;
+	setChances: Dispatch<StateUpdater<number[]>>;
+	setLotteryResults: Dispatch<StateUpdater<number[] | undefined>>;
+	setNames: Dispatch<StateUpdater<string[]>>;
+	setPresetKey: Dispatch<StateUpdater<string>>;
 };
 
 const Row = ({
