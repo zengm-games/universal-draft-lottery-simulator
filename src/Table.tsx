@@ -1,5 +1,5 @@
 import { type Dispatch, type StateUpdater, useState } from "preact/hooks";
-import { checkNamesAreAllDefault, getDefaultNames } from "./App";
+import { checkNamesAreAllDefault, getDefaultNames, type Team } from "./App";
 
 const ordinal = (x: number) => {
 	let suffix;
@@ -32,29 +32,25 @@ const formatPercent = (num: number | undefined) => {
 };
 
 type TableProps = {
-	chances: number[];
 	loadingProbs: boolean;
 	lotteryResults: number[] | undefined;
-	names: string[];
 	probs: number[][];
-	setChances: Dispatch<StateUpdater<number[]>>;
 	setLotteryResults: Dispatch<StateUpdater<number[] | undefined>>;
-	setNames: Dispatch<StateUpdater<string[]>>;
 	setPresetKey: Dispatch<StateUpdater<string>>;
+	setTeams: Dispatch<StateUpdater<Team[]>>;
+	teams: Team[];
 };
 
 const Row = ({
 	chance,
 	i,
-	chances,
 	lotteryResults,
 	loadingProbs,
-	names,
 	probs,
-	setChances,
 	setLotteryResults,
-	setNames,
 	setPresetKey,
+	setTeams,
+	teams,
 }: {
 	chance: number;
 	i: number;
@@ -85,13 +81,23 @@ const Row = ({
 					type="button"
 					onClick={() => {
 						setLotteryResults(undefined);
-						setChances(chances.filter((_chance, j) => j !== i));
 						setPresetKey("custom");
-						const namesAreAllDefault = checkNamesAreAllDefault(names);
+
+						const newTeams = teams.filter((t, j) => j !== i);
+
+						const namesAreAllDefault = checkNamesAreAllDefault(teams);
 						if (namesAreAllDefault) {
-							setNames(getDefaultNames(chances.length - 1));
+							const newNames = getDefaultNames(newTeams.length);
+							setTeams(
+								newTeams.map((t, j) => {
+									return {
+										chances: t.chances,
+										name: newNames[j]!,
+									};
+								}),
+							);
 						} else {
-							setNames(names.filter((_name, j) => j !== i));
+							setTeams(newTeams);
 						}
 						setHighlight(false);
 					}}
@@ -108,10 +114,19 @@ const Row = ({
 					id={nameId}
 					className="form-control py-1 px-2 text-sm w-[100px]"
 					type="text"
-					value={names[i]}
+					value={teams[i]!.name}
 					onChange={(event) => {
 						const newName = (event.target as any).value;
-						setNames(names.map((name, j) => (j === i ? newName : name)));
+						setTeams(
+							teams.map((t, j) =>
+								j === i
+									? {
+											chances: t.chances,
+											name: newName,
+										}
+									: t,
+							),
+						);
 					}}
 				/>
 			</td>
@@ -129,12 +144,21 @@ const Row = ({
 						if (!Number.isNaN(number)) {
 							setLotteryResults(undefined);
 							setPresetKey("custom");
-							setChances(chances.map((chance, j) => (i === j ? number : chance)));
+							setTeams(
+								teams.map((t, j) =>
+									j === i
+										? {
+												chances: number,
+												name: t.name,
+											}
+										: t,
+								),
+							);
 						}
 					}}
 				/>
 			</td>
-			{chances.map((_chance, j) => {
+			{teams.map((t, j) => {
 				const pct = formatPercent(probs[i]?.[j]);
 				return (
 					<td
@@ -163,14 +187,14 @@ export const Table = (props: TableProps) => {
 					<th />
 					<th>Team Name</th>
 					<th>Chances</th>
-					{props.chances.map((_chance, i) => (
+					{props.teams.map((t, i) => (
 						<th key={i}>{ordinal(i + 1)}</th>
 					))}
 				</tr>
 			</thead>
 			<tbody className="text-end">
-				{props.chances.map((chance, i) => {
-					return <Row key={i} i={i} chance={chance} {...props} />;
+				{props.teams.map((t, i) => {
+					return <Row key={i} i={i} chance={t.chances} {...props} />;
 				})}
 			</tbody>
 		</table>

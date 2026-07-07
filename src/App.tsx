@@ -80,6 +80,11 @@ const presets = [
 	},
 ];
 
+export type Team = {
+	name: string;
+	chances: number;
+};
+
 export const getDefaultNames = (numTeams: number) => {
 	const names = [];
 	for (let i = 0; i < numTeams; i++) {
@@ -88,10 +93,10 @@ export const getDefaultNames = (numTeams: number) => {
 	return names;
 };
 
-export const checkNamesAreAllDefault = (names: string[]) => {
-	const defaultNames = getDefaultNames(names.length);
-	for (let i = 0; i < names.length; i++) {
-		if (names[i] !== defaultNames[i]) {
+export const checkNamesAreAllDefault = (teams: Team[]) => {
+	const defaultNames = getDefaultNames(teams.length);
+	for (let i = 0; i < teams.length; i++) {
+		if (teams[i]!.name !== defaultNames[i]) {
 			return false;
 		}
 	}
@@ -102,7 +107,10 @@ export const checkNamesAreAllDefault = (names: string[]) => {
 const worker: Worker = new MyWorker();
 let requestCount = 0;
 
-const useLocalStorageState = (key: string, defaultValue: any) => {
+const useLocalStorageState = <T extends unknown>(
+	key: string,
+	defaultValue: T | (() => T),
+): [T, (value: T | ((prev: T) => T)) => void] => {
 	const [state, setState] = useState(() => {
 		try {
 			const stored = localStorage.getItem(key);
@@ -113,7 +121,7 @@ const useLocalStorageState = (key: string, defaultValue: any) => {
 			console.warn("useLocalStorageState read error", key, error);
 		}
 
-		return typeof defaultValue === "function" ? defaultValue() : defaultValue;
+		return typeof defaultValue === "function" ? (defaultValue as () => T)() : defaultValue;
 	});
 
 	useEffect(() => {
@@ -131,10 +139,18 @@ export const App = () => {
 	const [presetKey, setPresetKey] = useLocalStorageState("presetKey", "nba2027");
 	const preset = presets.find((preset) => preset.key === presetKey);
 
-	const [chances, setChances] = useLocalStorageState("chances", preset?.chances ?? []);
 	const [numToPick, setNumToPick] = useLocalStorageState("numToPick", preset?.numToPick ?? 0);
 	const [lotteryResults, setLotteryResults] = useState<number[] | undefined>();
-	const [names, setNames] = useLocalStorageState("names", () => getDefaultNames(chances.length));
+	const [teams, setTeams] = useLocalStorageState("teams", () => {
+		const allChances = preset?.chances ?? [];
+		const names = getDefaultNames(allChances.length);
+		return allChances.map((chances, i) => {
+			return {
+				chances,
+				name: names[i]!,
+			};
+		});
+	});
 	const [loadingProbs, setLoadingProbs] = useState(true);
 	const [probs, setProbs] = useState<number[][] | undefined>(); // undefined on initial load only
 	const [tooSlow, setTooSlow] = useState(false);
@@ -142,8 +158,8 @@ export const App = () => {
 	useEffect(() => {
 		setLoadingProbs(true);
 		requestCount += 1;
-		worker.postMessage({ chances, numToPick, requestCount });
-	}, [chances, numToPick]);
+		worker.postMessage({ chances: teams.map((t) => t.chances), numToPick, requestCount });
+	}, [teams, numToPick]);
 
 	useEffect(() => {
 		const listener = (event: any) => {
@@ -167,30 +183,39 @@ export const App = () => {
 	const onAddTeam = (direction: "top" | "bottom") => () => {
 		setLotteryResults(undefined);
 
+		const newTeam: Team = {
+			name: "",
+			chances: 0,
+		};
+		let newTeams;
+
 		if (direction === "bottom") {
-			setChances([...chances, chances[chances.length - 1] ?? 1]);
+			newTeam.chances = teams.at(-1)?.chances ?? 1;
+			newTeams = [...teams, newTeam];
 		} else {
-			setChances([chances[0] ?? 1, ...chances]);
+			newTeam.chances = teams[0]?.chances ?? 1;
+			newTeams = [newTeam, ...teams];
 		}
 
-		const namesAreAllDefault = checkNamesAreAllDefault(names);
+		const namesAreAllDefault = checkNamesAreAllDefault(teams);
 		if (namesAreAllDefault) {
-			setNames(getDefaultNames(chances.length + 1));
-		} else {
-			if (direction === "bottom") {
-				setNames([...names, `Team ${names.length + 1}`]);
-			} else {
-				setNames([`Team ${names.length + 1}`, ...names]);
+			const newNames = getDefaultNames(newTeams.length);
+			for (let i = 0; i < newTeams.length; i++) {
+				const t = newTeams[i]!;
+				t.name = newNames[i]!;
 			}
+		} else {
+			newTeam.name = `Team ${teams.length + 1}`;
 		}
+
+		setTeams(newTeams);
 
 		setPresetKey("custom");
 	};
 
 	const onClearTeams = () => {
 		setLotteryResults(undefined);
-		setChances([]);
-		setNames([]);
+		setTeams([]);
 		setPresetKey("custom");
 	};
 
@@ -200,7 +225,7 @@ export const App = () => {
 				Add Team
 			</Button>
 
-			<Button variant="danger" outline onClick={onClearTeams} disabled={chances.length === 0}>
+			<Button variant="danger" outline onClick={onClearTeams} disabled={teams.length === 0}>
 				Clear Teams
 			</Button>
 		</>
@@ -225,20 +250,34 @@ export const App = () => {
 							if (preset) {
 								setLotteryResults(undefined);
 								setPresetKey(preset.key);
-								setChances(preset.chances);
 								setNumToPick(preset.numToPick);
 
-								const namesAreAllDefault = checkNamesAreAllDefault(names);
-								const numNamesNeeded = preset.chances.length;
+								const chances = preset.chances;
+								let names;
+
+								const namesAreAllDefault = checkNamesAreAllDefault(teams);
+								const numNamesNeeded = chances.length;
 								if (namesAreAllDefault) {
-									setNames(getDefaultNames(numNamesNeeded));
+									names = getDefaultNames(numNamesNeeded);
 								} else {
-									const newNames = names.slice(0, numNamesNeeded);
-									while (newNames.length < numNamesNeeded) {
-										newNames.push(`Team ${newNames.length + 1}`);
+									names = teams.slice(0, numNamesNeeded).map((t) => t.name);
+									while (names.length < numNamesNeeded) {
+										names.push(`Team ${names.length + 1}`);
 									}
-									setNames(newNames);
 								}
+
+								const makeTeams = (allChances: number[], names: string[]) => {
+									const teams = allChances.map((chances, i) => {
+										return {
+											chances,
+											name: names[i]!,
+										};
+									});
+
+									return teams;
+								};
+
+								setTeams(makeTeams(chances, names));
 							} else {
 								setPresetKey("custom");
 							}
@@ -300,10 +339,13 @@ export const App = () => {
 					<Button
 						variant="success"
 						onClick={() => {
-							const results = simLottery(chances, numToPick);
+							const results = simLottery(
+								teams.map((t) => t.chances),
+								numToPick,
+							);
 							setLotteryResults(results);
 						}}
-						disabled={chances.length === 0}
+						disabled={teams.length === 0}
 					>
 						Sim Lottery
 					</Button>
@@ -316,7 +358,7 @@ export const App = () => {
 								setLotteryResults(undefined);
 							}}
 							outline
-							disabled={chances.length === 0}
+							disabled={teams.length === 0}
 						>
 							Clear Sim
 						</Button>
@@ -328,25 +370,23 @@ export const App = () => {
 				<div className="my-3">Loading...</div>
 			) : (
 				<>
-					{chances.length > 0 ? (
+					{teams.length > 0 ? (
 						<div className="mt-2 overflow-x-auto">
 							<Table
-								chances={chances}
 								loadingProbs={loadingProbs}
 								lotteryResults={lotteryResults}
-								names={names}
 								probs={probs}
-								setChances={setChances}
 								setLotteryResults={setLotteryResults}
-								setNames={setNames}
+								setTeams={setTeams}
 								setPresetKey={setPresetKey}
+								teams={teams}
 							/>
 						</div>
 					) : (
 						<div className="my-3">You should add some teams...</div>
 					)}
 
-					{chances.length > 0 ? (
+					{teams.length > 0 ? (
 						<div className="my-3 flex gap-2">{addClearButtons("bottom")}</div>
 					) : null}
 				</>
