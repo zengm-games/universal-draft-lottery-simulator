@@ -1,3 +1,4 @@
+import "./polyfills.ts";
 import { getProbs } from "./getProbs";
 
 onmessage = (event) => {

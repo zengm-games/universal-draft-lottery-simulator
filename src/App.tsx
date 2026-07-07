@@ -6,9 +6,16 @@ import { Table } from "./Table";
 
 const presets = [
 	{
+		key: "nba2027",
+		title: "NBA 2027-present (3-2-1)",
+		description: "Weighted lottery for the top 16 picks, like the NBA since 2027",
+		numToPick: 16,
+		chances: [2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1],
+	},
+	{
 		key: "nba2019",
-		title: "NBA 2019-present",
-		description: "Weighted lottery for the top 4 picks, like the NBA since 2019",
+		title: "NBA 2019-2026",
+		description: "Weighted lottery for the top 4 picks, like the NBA from 2019-2026",
 		numToPick: 4,
 		chances: [140, 140, 140, 125, 105, 90, 75, 60, 45, 30, 20, 15, 10, 5],
 	},
