@@ -9,48 +9,42 @@ const presets = [
 	{
 		key: "nba2019",
 		title: "NBA 2019-present",
-		description:
-			"Weighted lottery for the top 4 picks, like the NBA since 2019",
+		description: "Weighted lottery for the top 4 picks, like the NBA since 2019",
 		numToPick: 4,
 		chances: [140, 140, 140, 125, 105, 90, 75, 60, 45, 30, 20, 15, 10, 5],
 	},
 	{
 		key: "nba1994",
 		title: "NBA 1994-2018",
-		description:
-			"Weighted lottery for the top 3 picks, like the NBA from 1994-2018",
+		description: "Weighted lottery for the top 3 picks, like the NBA from 1994-2018",
 		numToPick: 3,
 		chances: [250, 199, 156, 119, 88, 63, 43, 28, 17, 11, 8, 7, 6, 5],
 	},
 	{
 		key: "nba1990",
 		title: "NBA 1990-1993",
-		description:
-			"Weighted lottery for the top 3 picks, like the NBA from 1990-1993",
+		description: "Weighted lottery for the top 3 picks, like the NBA from 1990-1993",
 		numToPick: 3,
 		chances: [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
 	},
 	{
 		key: "nba1987",
 		title: "NBA 1987-1989",
-		description:
-			"Random lottery for the top 3 picks, like the NBA from 1987-1989",
+		description: "Random lottery for the top 3 picks, like the NBA from 1987-1989",
 		numToPick: 3,
 		chances: [1, 1, 1, 1, 1, 1, 1],
 	},
 	{
 		key: "nba1985",
 		title: "NBA 1985-1986",
-		description:
-			"Non-playoff teams draft in random order, like the NBA from 1985-1986",
+		description: "Non-playoff teams draft in random order, like the NBA from 1985-1986",
 		numToPick: 7,
 		chances: [1, 1, 1, 1, 1, 1, 1],
 	},
 	{
 		key: "nba1966",
 		title: "NBA 1966-1984",
-		description:
-			"Coin flip to determine the top 2 picks, like the NBA from 1966-1984",
+		description: "Coin flip to determine the top 2 picks, like the NBA from 1966-1984",
 		numToPick: 2,
 		chances: [1, 1, 0, 0, 0, 0, 0],
 	},
@@ -65,20 +59,17 @@ const presets = [
 	{
 		key: "nhl2017",
 		title: "NHL 2017-2020",
-		description:
-			"Weighted lottery for the top 3 picks, like the NHL from 2017-2020",
+		description: "Weighted lottery for the top 3 picks, like the NHL from 2017-2020",
 		numToPick: 3,
 		chances: [185, 135, 115, 95, 85, 75, 65, 60, 50, 35, 30, 25, 20, 15, 10],
 	},
 	{
 		key: "mlb2022",
 		title: "MLB 2022-present",
-		description:
-			"Weighted lottery for the top 6 picks, like the MLB since 2022",
+		description: "Weighted lottery for the top 6 picks, like the MLB since 2022",
 		numToPick: 6,
 		chances: [
-			1650, 1650, 1650, 1325, 1000, 750, 550, 390, 270, 180, 140, 110, 90, 76,
-			62, 48, 36, 23,
+			1650, 1650, 1650, 1325, 1000, 750, 550, 390, 270, 180, 140, 110, 90, 76, 62, 48, 36, 23,
 		],
 	},
 ];
@@ -131,24 +122,13 @@ const useLocalStorageState = (key: string, defaultValue: any) => {
 };
 
 export const App = () => {
-	const [presetKey, setPresetKey] = useLocalStorageState(
-		"presetKey",
-		"nba2019",
-	);
+	const [presetKey, setPresetKey] = useLocalStorageState("presetKey", "nba2019");
 	const preset = presets.find((preset) => preset.key === presetKey);
 
-	const [chances, setChances] = useLocalStorageState(
-		"chances",
-		preset?.chances ?? [],
-	);
-	const [numToPick, setNumToPick] = useLocalStorageState(
-		"numToPick",
-		preset?.numToPick ?? 0,
-	);
+	const [chances, setChances] = useLocalStorageState("chances", preset?.chances ?? []);
+	const [numToPick, setNumToPick] = useLocalStorageState("numToPick", preset?.numToPick ?? 0);
 	const [lotteryResults, setLotteryResults] = useState<number[] | undefined>();
-	const [names, setNames] = useLocalStorageState("names", () =>
-		getDefaultNames(chances.length),
-	);
+	const [names, setNames] = useLocalStorageState("names", () => getDefaultNames(chances.length));
 	const [loadingProbs, setLoadingProbs] = useState(true);
 	const [probs, setProbs] = useState<number[][] | undefined>(); // undefined on initial load only
 	const [tooSlow, setTooSlow] = useState(false);
@@ -210,12 +190,7 @@ export const App = () => {
 
 	const addClearButtons = (direction: "top" | "bottom") => (
 		<>
-			<Button
-				variant="primary"
-				outline
-				className="mr-2"
-				onClick={onAddTeam(direction)}
-			>
+			<Button variant="primary" outline className="mr-2" onClick={onAddTeam(direction)}>
 				Add Team
 			</Button>
 
@@ -245,9 +220,7 @@ export const App = () => {
 						className="form-control mt-1 h-[42px]"
 						id="presetKey"
 						onChange={(event) => {
-							const preset = presets.find(
-								(preset) => preset.key === (event.target as any).value,
-							);
+							const preset = presets.find((preset) => preset.key === (event.target as any).value);
 
 							if (preset) {
 								setLotteryResults(undefined);
@@ -284,9 +257,7 @@ export const App = () => {
 				<div>
 					<label htmlFor="numToPick">
 						<span className="sm:hidden"># Lottery Selections</span>
-						<span className="hidden sm:inline">
-							Number of Lottery Selections
-						</span>
+						<span className="hidden sm:inline">Number of Lottery Selections</span>
 					</label>
 					<input
 						className="form-control mt-1 h-[42px]"
@@ -307,15 +278,12 @@ export const App = () => {
 					></input>
 				</div>
 			</div>
-			{preset ? (
-				<div className="text-gray-500 mt-1">{preset.description}</div>
-			) : null}
+			{preset ? <div className="text-gray-500 mt-1">{preset.description}</div> : null}
 
 			{tooSlow ? (
 				<>
 					<div className="text-red-600 mt-1">
-						Computing exact odds for so many teams and picks is too slow, so
-						estimates are shown.
+						Computing exact odds for so many teams and picks is too slow, so estimates are shown.
 					</div>
 				</>
 			) : null}
@@ -373,21 +341,17 @@ export const App = () => {
 						<div className="my-3">You should add some teams...</div>
 					)}
 
-					{chances.length > 0 ? (
-						<div className="my-3">{addClearButtons("bottom")}</div>
-					) : null}
+					{chances.length > 0 ? <div className="my-3">{addClearButtons("bottom")}</div> : null}
 				</>
 			)}
 			<div className="alert">
-				If you like simulating hypothetical draft lotteries, maybe you'd like
-				simulating a whole league? <a href="https://zengm.com/">ZenGM</a> has
-				you covered! Play{" "}
+				If you like simulating hypothetical draft lotteries, maybe you'd like simulating a whole
+				league? <a href="https://zengm.com/">ZenGM</a> has you covered! Play{" "}
 				<a href="https://play.basketball-gm.com/">basketball</a>,{" "}
 				<a href="https://play.football-gm.com/">football</a>,{" "}
 				<a href="https://baseball.zengm.com/">baseball</a>, or{" "}
-				<a href="https://hockey.zengm.com/">hockey</a>. You can customize the
-				draft lottery and tons of other things, and play as many seasons as you
-				want. All for free!
+				<a href="https://hockey.zengm.com/">hockey</a>. You can customize the draft lottery and tons
+				of other things, and play as many seasons as you want. All for free!
 			</div>
 			<p>
 				<a href="https://github.com/zengm-games/universal-draft-lottery-simulator">

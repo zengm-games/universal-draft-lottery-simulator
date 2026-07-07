@@ -1,38 +1,50 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>The Universal Draft Lottery Simulator</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Calculate the odds and simulate an NBA/MLB/NHL-like draft lottery with any number of teams and any probabilities you want.">
-    <script>
-      const hideIntro = localStorage.getItem("hideIntro");
-      if (hideIntro) {
-        const styleSheet = document.createElement("style")
-        styleSheet.innerText = "#intro { display: none; }"
-        document.head.appendChild(styleSheet)
-      }
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <h1 class="bg-blue-800 text-white text-3xl sm:text-4xl lg:text-5xl p-3">The Universal Draft Lottery Simulator</h1>
-    <div class="m-3">
-      <div class="alert relative pr-5" id="intro">
-        <button
-          class="text-xl absolute top-1 right-2"
-          type="button"
-          onclick="localStorage.setItem('hideIntro', '1'); this.parentNode.style.display='none';"
-          title="Hide intro"
-        >
-          ✕
-        </button>
-        Calculate the odds and simulate an <a href="https://en.wikipedia.org/wiki/NBA_draft_lottery">NBA/MLB/NHL-like draft lottery</a> with any number of teams and any probabilities you want. You have complete flexibility in how the lottery is generated and performed. Use it for your fantasy league, or just for playing around.
-      </div>
-      <div id="app"><div class="mb-3">Loading...</div></div>
-    </div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+	<head>
+		<meta charset="UTF-8" />
+		<title>The Universal Draft Lottery Simulator</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta
+			name="description"
+			content="Calculate the odds and simulate an NBA/MLB/NHL-like draft lottery with any number of teams and any probabilities you want."
+		/>
+		<script>
+			const hideIntro = localStorage.getItem("hideIntro");
+			if (hideIntro) {
+				const styleSheet = document.createElement("style");
+				styleSheet.innerText = "#intro { display: none; }";
+				document.head.appendChild(styleSheet);
+			}
+		</script>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Kanit&display=swap" rel="stylesheet" />
+	</head>
+	<body>
+		<h1 class="bg-blue-800 text-white text-3xl sm:text-4xl lg:text-5xl p-3">
+			The Universal Draft Lottery Simulator
+		</h1>
+		<div class="m-3">
+			<div class="alert relative pr-5" id="intro">
+				<button
+					class="text-xl absolute top-1 right-2"
+					type="button"
+					onclick="
+						localStorage.setItem('hideIntro', '1');
+						this.parentNode.style.display = 'none';
+					"
+					title="Hide intro"
+				>
+					✕
+				</button>
+				Calculate the odds and simulate an
+				<a href="https://en.wikipedia.org/wiki/NBA_draft_lottery">NBA/MLB/NHL-like draft lottery</a>
+				with any number of teams and any probabilities you want. You have complete flexibility in
+				how the lottery is generated and performed. Use it for your fantasy league, or just for
+				playing around.
+			</div>
+			<div id="app"><div class="mb-3">Loading...</div></div>
+		</div>
+		<script type="module" src="/src/main.tsx"></script>
+	</body>
 </html>

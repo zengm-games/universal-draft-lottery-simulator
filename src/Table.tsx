@@ -129,9 +129,7 @@ const Row = ({
 						if (!Number.isNaN(number)) {
 							setLotteryResults(undefined);
 							setPresetKey("custom");
-							setChances(
-								chances.map((chance, j) => (i === j ? number : chance)),
-							);
+							setChances(chances.map((chance, j) => (i === j ? number : chance)));
 						}
 					}}
 				/>

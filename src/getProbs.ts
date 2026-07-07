@@ -131,10 +131,7 @@ export const getProbs = (chances: number[], numToPick: number) => {
 			chancesLeft -= chances[prevTeamIndex];
 		}
 
-		const priorProb =
-			prevLotteryWinnerIndexes.length === 0
-				? 1
-				: getProb(prevLotteryWinnerIndexes);
+		const priorProb = prevLotteryWinnerIndexes.length === 0 ? 1 : getProb(prevLotteryWinnerIndexes);
 
 		const prob = (priorProb * chances[currentTeamIndex]) / chancesLeft;
 
