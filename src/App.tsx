@@ -196,17 +196,11 @@ export const App = () => {
 
 	const addClearButtons = (direction: "top" | "bottom") => (
 		<>
-			<Button variant="primary" outline className="mr-2" onClick={onAddTeam(direction)}>
+			<Button variant="primary" outline onClick={onAddTeam(direction)}>
 				Add Team
 			</Button>
 
-			<Button
-				variant="danger"
-				outline
-				className="mr-2"
-				onClick={onClearTeams}
-				disabled={chances.length === 0}
-			>
+			<Button variant="danger" outline onClick={onClearTeams} disabled={chances.length === 0}>
 				Clear Teams
 			</Button>
 		</>
@@ -295,7 +289,12 @@ export const App = () => {
 			) : null}
 
 			<div className="mt-3 sm:flex">
-				<div>{addClearButtons("top")}</div>
+				<div className="flex gap-2">
+					{addClearButtons("top")}
+					<Button variant="secondary" outline className="mr-2" onClick={() => {}}>
+						Enable 3-2-1 restrictions
+					</Button>
+				</div>
 
 				<div className="mt-2 sm:mt-0">
 					<Button
@@ -347,7 +346,9 @@ export const App = () => {
 						<div className="my-3">You should add some teams...</div>
 					)}
 
-					{chances.length > 0 ? <div className="my-3">{addClearButtons("bottom")}</div> : null}
+					{chances.length > 0 ? (
+						<div className="my-3 flex gap-2">{addClearButtons("bottom")}</div>
+					) : null}
 				</>
 			)}
 			<div className="alert">
