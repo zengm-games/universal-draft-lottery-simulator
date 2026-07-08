@@ -158,7 +158,8 @@ export const App = () => {
 	const [loadingProbs, setLoadingProbs] = useState(true);
 	const [probs, setProbs] = useState<number[][] | undefined>(); // undefined on initial load only
 	const [tooSlow, setTooSlow] = useState(false);
-	const [enableNba2027Restrictions, setEnableNba2027Restrictions] = useState(
+	const [enableNba2027Restrictions, setEnableNba2027Restrictions] = useLocalStorageState(
+		"enableNba2027Restrictions",
 		preset?.enableNba2027Restrictions ?? false,
 	);
 
@@ -181,6 +182,7 @@ export const App = () => {
 				}
 			}
 		}
+		console.log("nba2027Restrictions", nba2027Restrictions);
 
 		worker.postMessage({
 			chances: teams.map((t) => t.chances),
@@ -410,6 +412,7 @@ export const App = () => {
 					{teams.length > 0 ? (
 						<div className="mt-2 overflow-x-auto">
 							<Table
+								enableNba2027Restrictions={enableNba2027Restrictions}
 								loadingProbs={loadingProbs}
 								lotteryResults={lotteryResults}
 								probs={probs}

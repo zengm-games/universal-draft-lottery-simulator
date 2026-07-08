@@ -32,6 +32,7 @@ const formatPercent = (num: number | undefined) => {
 };
 
 type TableProps = {
+	enableNba2027Restrictions: boolean;
 	loadingProbs: boolean;
 	lotteryResults: number[] | undefined;
 	probs: number[][];
@@ -43,6 +44,7 @@ type TableProps = {
 
 const Row = ({
 	chance,
+	enableNba2027Restrictions,
 	i,
 	lotteryResults,
 	loadingProbs,
@@ -59,6 +61,8 @@ const Row = ({
 
 	const nameId = `name-${i}`;
 	const chancesId = `chances-${i}`;
+
+	const t = teams[i]!;
 
 	return (
 		<tr
@@ -114,14 +118,14 @@ const Row = ({
 					id={nameId}
 					className="form-control py-1 px-2 text-sm w-[100px]"
 					type="text"
-					value={teams[i]!.name}
+					value={t.name}
 					onChange={(event) => {
 						const newName = (event.target as any).value;
 						setTeams(
 							teams.map((t, j) =>
 								j === i
 									? {
-											chances: t.chances,
+											...t,
 											name: newName,
 										}
 									: t,
@@ -148,8 +152,8 @@ const Row = ({
 								teams.map((t, j) =>
 									j === i
 										? {
+												...t,
 												chances: number,
-												name: t.name,
 											}
 										: t,
 								),
@@ -158,6 +162,29 @@ const Row = ({
 					}}
 				/>
 			</td>
+			{enableNba2027Restrictions ? (
+				<td className="py-0 text-start">
+					<button
+						className={`py-1 px-2 text-sm border rounded enabled:hover:bg-slate-100 ${t.restricted !== undefined ? "text-red-600 border-red-600" : "text-slate-600 border-slate-400"}`}
+						onClick={() => {
+							setLotteryResults(undefined);
+							setPresetKey("custom");
+							setTeams(
+								teams.map((t, j) =>
+									j === i
+										? {
+												...t,
+												restricted: t.restricted === 1 ? 5 : t.restricted === 5 ? undefined : 1,
+											}
+										: t,
+								),
+							);
+						}}
+					>
+						{t.restricted === 1 ? "Top 1" : t.restricted === 5 ? "Top 5" : "None"}
+					</button>
+				</td>
+			) : null}
 			{teams.map((t, j) => {
 				const pct = formatPercent(probs[i]?.[j]);
 				return (
@@ -187,6 +214,7 @@ export const Table = (props: TableProps) => {
 					<th />
 					<th>Team Name</th>
 					<th>Chances</th>
+					{props.enableNba2027Restrictions ? <th>Restriction</th> : null}
 					{props.teams.map((t, i) => (
 						<th key={i}>{ordinal(i + 1)}</th>
 					))}
