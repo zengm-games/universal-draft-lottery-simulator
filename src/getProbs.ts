@@ -344,8 +344,8 @@ export const getProbs = (
 			((isRestricted1 ? 1 : 0) << 1) |
 			(isRestricted5 ? 1 : 0);
 
-		if (!chancesSorted && key !== lastKey) {
-			// This is needed for when teams are not sorted by chances
+		if (!nba2027Restrictions && !chancesSorted && key !== lastKey) {
+			// This is needed for when teams are not sorted by chances in a non-nba2027 lottery (which impedes supporting nba2027Restrictions on non-nba2027 lotteries)
 			equivalenceClassIdx++;
 		}
 
