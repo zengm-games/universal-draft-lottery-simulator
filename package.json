@@ -27,5 +27,6 @@
 	},
 	"lint-staged": {
 		"*": "oxfmt --no-error-on-unmatched-pattern"
-	}
+	},
+	"type": "module"
 }
