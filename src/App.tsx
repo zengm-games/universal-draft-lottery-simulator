@@ -7,7 +7,7 @@ import type { Nba2027Restrictions } from "./getProbs.ts";
 
 const presets = [
 	{
-		key: "nba2027",
+		key: "nba2027" as const,
 		title: "NBA 2027-present (3-2-1)",
 		description: "Weighted lottery for all picks, like the NBA since 2027",
 		numToPick: 16,
@@ -15,49 +15,49 @@ const presets = [
 		enableNba2027Restrictions: true,
 	},
 	{
-		key: "nba2019",
+		key: "nba2019" as const,
 		title: "NBA 2019-2026",
 		description: "Weighted lottery for the top 4 picks, like the NBA from 2019-2026",
 		numToPick: 4,
 		chances: [140, 140, 140, 125, 105, 90, 75, 60, 45, 30, 20, 15, 10, 5],
 	},
 	{
-		key: "nba1994",
+		key: "nba1994" as const,
 		title: "NBA 1994-2018",
 		description: "Weighted lottery for the top 3 picks, like the NBA from 1994-2018",
 		numToPick: 3,
 		chances: [250, 199, 156, 119, 88, 63, 43, 28, 17, 11, 8, 7, 6, 5],
 	},
 	{
-		key: "nba1990",
+		key: "nba1990" as const,
 		title: "NBA 1990-1993",
 		description: "Weighted lottery for the top 3 picks, like the NBA from 1990-1993",
 		numToPick: 3,
 		chances: [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
 	},
 	{
-		key: "nba1987",
+		key: "nba1987" as const,
 		title: "NBA 1987-1989",
 		description: "Random lottery for the top 3 picks, like the NBA from 1987-1989",
 		numToPick: 3,
 		chances: [1, 1, 1, 1, 1, 1, 1],
 	},
 	{
-		key: "nba1985",
+		key: "nba1985" as const,
 		title: "NBA 1985-1986",
 		description: "Non-playoff teams draft in random order, like the NBA from 1985-1986",
 		numToPick: 7,
 		chances: [1, 1, 1, 1, 1, 1, 1],
 	},
 	{
-		key: "nba1966",
+		key: "nba1966" as const,
 		title: "NBA 1966-1984",
 		description: "Coin flip to determine the top 2 picks, like the NBA from 1966-1984",
 		numToPick: 2,
 		chances: [1, 1, 0, 0, 0, 0, 0],
 	},
 	{
-		key: "nhl2021",
+		key: "nhl2021" as const,
 		title: "NHL 2021-present",
 		description:
 			"Weighted lottery for the top 2 picks, like the NHL since 2021. This does not include the NHL's constraint on the number of spots a team can move up.",
@@ -65,14 +65,14 @@ const presets = [
 		chances: [185, 135, 115, 95, 85, 75, 65, 60, 50, 35, 30, 25, 20, 15, 5, 5],
 	},
 	{
-		key: "nhl2017",
+		key: "nhl2017" as const,
 		title: "NHL 2017-2020",
 		description: "Weighted lottery for the top 3 picks, like the NHL from 2017-2020",
 		numToPick: 3,
 		chances: [185, 135, 115, 95, 85, 75, 65, 60, 50, 35, 30, 25, 20, 15, 10],
 	},
 	{
-		key: "mlb2022",
+		key: "mlb2022" as const,
 		title: "MLB 2022-present",
 		description: "Weighted lottery for the top 6 picks, like the MLB since 2022",
 		numToPick: 6,
@@ -138,8 +138,10 @@ const useLocalStorageState = <T extends unknown>(
 	return [state, setState];
 };
 
+export type PresetKey = (typeof presets)[number]["key"] | "custom" | "customNba2027";
+
 export const App = () => {
-	const [presetKey, setPresetKey] = useLocalStorageState("presetKey", "nba2027");
+	const [presetKey, setPresetKey] = useLocalStorageState<PresetKey>("presetKey", "nba2027");
 	const preset = presets.find((preset) => preset.key === presetKey);
 
 	const [numToPick, setNumToPick] = useLocalStorageState("numToPick", preset?.numToPick ?? 0);
@@ -276,7 +278,7 @@ export const App = () => {
 						className="form-control mt-1 h-[42px]"
 						id="presetKey"
 						onChange={(event) => {
-							const newKey = (event.target as any).value as string;
+							const newKey = (event.target as any).value as PresetKey;
 							const preset = presets.find((preset) => preset.key === newKey);
 
 							if (preset) {

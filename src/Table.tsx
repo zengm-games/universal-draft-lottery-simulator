@@ -1,5 +1,5 @@
 import { type Dispatch, type StateUpdater, useState } from "preact/hooks";
-import { checkNamesAreAllDefault, getDefaultNames, type Team } from "./App";
+import { checkNamesAreAllDefault, getDefaultNames, type PresetKey, type Team } from "./App";
 
 const ordinal = (x: number) => {
 	let suffix;
@@ -37,7 +37,7 @@ type TableProps = {
 	lotteryResults: number[] | undefined;
 	probs: number[][];
 	setLotteryResults: Dispatch<StateUpdater<number[] | undefined>>;
-	setPresetKey: Dispatch<StateUpdater<string>>;
+	setPresetKey: Dispatch<StateUpdater<PresetKey>>;
 	setTeams: Dispatch<StateUpdater<Team[]>>;
 	teams: Team[];
 };
