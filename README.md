@@ -10,7 +10,7 @@ https://zengm.com/universal-draft-lottery-simulator/
 
 ## License
 
-Copyright 2022 ZenGM, LLC
+Copyright 2022-2026 ZenGM, LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
