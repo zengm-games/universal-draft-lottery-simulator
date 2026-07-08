@@ -140,6 +140,23 @@ const useLocalStorageState = <T extends unknown>(
 
 export type PresetKey = (typeof presets)[number]["key"] | "custom" | "customNba2027";
 
+const makeNba2027Restrictions = (teams: Team[]) => {
+	const nba2027Restrictions: Nba2027Restrictions = {
+		restricted1: [],
+		restricted5: [],
+	};
+
+	for (const [i, t] of teams.entries()) {
+		if (t.restricted === 5) {
+			nba2027Restrictions.restricted5.push(i);
+		} else if (t.restricted === 1) {
+			nba2027Restrictions.restricted1.push(i);
+		}
+	}
+
+	return nba2027Restrictions;
+};
+
 export const App = () => {
 	const [presetKey, setPresetKey] = useLocalStorageState<PresetKey>("presetKey", "nba2027");
 	const preset = presets.find((preset) => preset.key === presetKey);
@@ -170,21 +187,9 @@ export const App = () => {
 		setLoadingProbs(true);
 		requestCount += 1;
 
-		let nba2027Restrictions: Nba2027Restrictions | undefined;
-		if (enableNba2027Restrictions) {
-			nba2027Restrictions = {
-				restricted1: [],
-				restricted5: [],
-			};
-
-			for (const [i, t] of teams.entries()) {
-				if (t.restricted === 5) {
-					nba2027Restrictions.restricted5.push(i);
-				} else if (t.restricted === 1) {
-					nba2027Restrictions.restricted1.push(i);
-				}
-			}
-		}
+		const nba2027Restrictions = enableNba2027Restrictions
+			? makeNba2027Restrictions(teams)
+			: undefined;
 
 		worker.postMessage({
 			chances: teams.map((t) => t.chances),
@@ -380,9 +385,13 @@ export const App = () => {
 					<Button
 						variant="success"
 						onClick={() => {
+							const nba2027Restrictions = enableNba2027Restrictions
+								? makeNba2027Restrictions(teams)
+								: undefined;
 							const results = simLottery(
 								teams.map((t) => t.chances),
 								numToPick,
+								nba2027Restrictions,
 							);
 							setLotteryResults(results);
 						}}
