@@ -85,6 +85,7 @@ const presets = [
 export type Team = {
 	name: string;
 	chances: number;
+	restricted?: 1 | 5;
 };
 
 export const getDefaultNames = (numTeams: number) => {
@@ -147,10 +148,11 @@ export const App = () => {
 		const allChances = preset?.chances ?? [];
 		const names = getDefaultNames(allChances.length);
 		return allChances.map((chances, i) => {
-			return {
+			const t: Team = {
 				chances,
 				name: names[i]!,
 			};
+			return t;
 		});
 	});
 	const [loadingProbs, setLoadingProbs] = useState(true);
@@ -170,6 +172,14 @@ export const App = () => {
 				restricted1: [],
 				restricted5: [],
 			};
+
+			for (const [i, t] of teams.entries()) {
+				if (t.restricted === 5) {
+					nba2027Restrictions.restricted5.push(i);
+				} else if (t.restricted === 1) {
+					nba2027Restrictions.restricted1.push(i);
+				}
+			}
 		}
 
 		worker.postMessage({
