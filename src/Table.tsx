@@ -168,7 +168,6 @@ const Row = ({
 						className={`py-1 px-2 text-sm border rounded enabled:hover:bg-slate-100 ${t.restricted !== undefined ? "text-red-600 border-red-600" : "text-slate-600 border-slate-400"}`}
 						onClick={() => {
 							setLotteryResults(undefined);
-							setPresetKey("custom");
 							setTeams(
 								teams.map((t, j) =>
 									j === i

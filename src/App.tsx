@@ -158,17 +158,13 @@ export const App = () => {
 	const [loadingProbs, setLoadingProbs] = useState(true);
 	const [probs, setProbs] = useState<number[][] | undefined>(); // undefined on initial load only
 	const [tooSlow, setTooSlow] = useState(false);
-	const [enableNba2027Restrictions, setEnableNba2027Restrictions] = useLocalStorageState(
-		"enableNba2027Restrictions",
-		preset?.enableNba2027Restrictions ?? false,
-	);
 
 	useEffect(() => {
 		setLoadingProbs(true);
 		requestCount += 1;
 
 		let nba2027Restrictions: Nba2027Restrictions | undefined;
-		if (enableNba2027Restrictions) {
+		if (preset?.enableNba2027Restrictions) {
 			nba2027Restrictions = {
 				restricted1: [],
 				restricted5: [],
@@ -182,7 +178,6 @@ export const App = () => {
 				}
 			}
 		}
-		console.log("nba2027Restrictions", nba2027Restrictions);
 
 		worker.postMessage({
 			chances: teams.map((t) => t.chances),
@@ -190,7 +185,7 @@ export const App = () => {
 			numToPick,
 			requestCount,
 		});
-	}, [enableNba2027Restrictions, numToPick, teams]);
+	}, [numToPick, preset?.enableNba2027Restrictions, teams]);
 
 	useEffect(() => {
 		const listener = (event: any) => {
@@ -282,7 +277,6 @@ export const App = () => {
 								setLotteryResults(undefined);
 								setPresetKey(preset.key);
 								setNumToPick(preset.numToPick);
-								setEnableNba2027Restrictions(preset.enableNba2027Restrictions ?? false);
 
 								const chances = preset.chances;
 								let names;
@@ -359,22 +353,10 @@ export const App = () => {
 				</>
 			) : null}
 
-			<div className="mt-3">
-				<div className="flex gap-2">
-					{addClearButtons("top")}
-					<Button
-						variant="secondary"
-						outline
-						className="mr-2"
-						onClick={() => {
-							setEnableNba2027Restrictions((x) => !x);
-						}}
-					>
-						{enableNba2027Restrictions ? "Disable" : "Enable"} 3-2-1 restrictions
-					</Button>
-				</div>
+			<div className="mt-3 sm:flex gap-2">
+				<div className="flex gap-2">{addClearButtons("top")}</div>
 
-				<div className="mt-2">
+				<div className="mt-2 sm:mt-0">
 					<Button
 						variant="success"
 						onClick={() => {
@@ -412,7 +394,7 @@ export const App = () => {
 					{teams.length > 0 ? (
 						<div className="mt-2 overflow-x-auto">
 							<Table
-								enableNba2027Restrictions={enableNba2027Restrictions}
+								enableNba2027Restrictions={!!preset?.enableNba2027Restrictions}
 								loadingProbs={loadingProbs}
 								lotteryResults={lotteryResults}
 								probs={probs}
