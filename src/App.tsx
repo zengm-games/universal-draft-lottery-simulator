@@ -159,12 +159,17 @@ export const App = () => {
 	const [probs, setProbs] = useState<number[][] | undefined>(); // undefined on initial load only
 	const [tooSlow, setTooSlow] = useState(false);
 
+	// Enable restrictions for either base nba2027 or a custom one based on that
+	const enableNba2027Restrictions = preset
+		? !!preset.enableNba2027Restrictions
+		: presetKey === "customNba2027";
+
 	useEffect(() => {
 		setLoadingProbs(true);
 		requestCount += 1;
 
 		let nba2027Restrictions: Nba2027Restrictions | undefined;
-		if (preset?.enableNba2027Restrictions) {
+		if (enableNba2027Restrictions) {
 			nba2027Restrictions = {
 				restricted1: [],
 				restricted5: [],
@@ -185,7 +190,7 @@ export const App = () => {
 			numToPick,
 			requestCount,
 		});
-	}, [numToPick, preset?.enableNba2027Restrictions, teams]);
+	}, [numToPick, enableNba2027Restrictions, teams]);
 
 	useEffect(() => {
 		const listener = (event: any) => {
@@ -236,13 +241,13 @@ export const App = () => {
 
 		setTeams(newTeams);
 
-		setPresetKey("custom");
+		setPresetKey(enableNba2027Restrictions ? "customNba2027" : "custom");
 	};
 
 	const onClearTeams = () => {
 		setLotteryResults(undefined);
 		setTeams([]);
-		setPresetKey("custom");
+		setPresetKey(enableNba2027Restrictions ? "customNba2027" : "custom");
 	};
 
 	const addClearButtons = (direction: "top" | "bottom") => (
@@ -271,7 +276,8 @@ export const App = () => {
 						className="form-control mt-1 h-[42px]"
 						id="presetKey"
 						onChange={(event) => {
-							const preset = presets.find((preset) => preset.key === (event.target as any).value);
+							const newKey = (event.target as any).value as string;
+							const preset = presets.find((preset) => preset.key === newKey);
 
 							if (preset) {
 								setLotteryResults(undefined);
@@ -305,21 +311,23 @@ export const App = () => {
 
 								setTeams(makeTeams(chances, names));
 							} else {
-								setPresetKey("custom");
+								// One of the custom ones
+								setPresetKey(newKey);
 							}
 						}}
-						value={preset?.key ?? "custom"}
+						value={preset?.key ?? presetKey}
 					>
 						{presets.map((preset) => (
 							<option key={preset.key} value={preset.key}>
 								{preset.title}
 							</option>
 						))}
+						<option value="customNba2027">Custom (3-2-1)</option>
 						<option value="custom">Custom</option>
 					</select>
 				</div>
 
-				{preset?.enableNba2027Restrictions ? null : (
+				{enableNba2027Restrictions ? null : (
 					<div>
 						<label htmlFor="numToPick">
 							<span className="sm:hidden"># Lottery Selections</span>
@@ -345,7 +353,13 @@ export const App = () => {
 					</div>
 				)}
 			</div>
-			{preset ? <div className="text-gray-500 mt-1">{preset.description}</div> : null}
+			<div className="text-gray-500 mt-1">
+				{preset?.description
+					? preset.description
+					: presetKey === "customNba2027"
+						? "Weighted lottery for all picks, similar to the NBA since 2027"
+						: "Custom lottery"}
+			</div>
 
 			{tooSlow ? (
 				<>
@@ -396,7 +410,7 @@ export const App = () => {
 					{teams.length > 0 ? (
 						<div className="mt-2 overflow-x-auto">
 							<Table
-								enableNba2027Restrictions={!!preset?.enableNba2027Restrictions}
+								enableNba2027Restrictions={enableNba2027Restrictions}
 								loadingProbs={loadingProbs}
 								lotteryResults={lotteryResults}
 								probs={probs}

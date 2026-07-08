@@ -85,7 +85,7 @@ const Row = ({
 					type="button"
 					onClick={() => {
 						setLotteryResults(undefined);
-						setPresetKey("custom");
+						setPresetKey(enableNba2027Restrictions ? "customNba2027" : "custom");
 
 						const newTeams = teams.filter((t, j) => j !== i);
 
@@ -147,7 +147,7 @@ const Row = ({
 						const number = parseFloat((event.target as any).value);
 						if (!Number.isNaN(number)) {
 							setLotteryResults(undefined);
-							setPresetKey("custom");
+							setPresetKey(enableNba2027Restrictions ? "customNba2027" : "custom");
 							setTeams(
 								teams.map((t, j) =>
 									j === i
@@ -168,6 +168,7 @@ const Row = ({
 						className={`py-1 px-2 text-sm border rounded enabled:hover:bg-slate-100 ${t.restricted !== undefined ? "text-red-600 border-red-600" : "text-slate-600 border-slate-400"}`}
 						onClick={() => {
 							setLotteryResults(undefined);
+							setPresetKey("customNba2027");
 							setTeams(
 								teams.map((t, j) =>
 									j === i
