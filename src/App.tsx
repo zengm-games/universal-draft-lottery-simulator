@@ -3,6 +3,7 @@ import { simLottery } from "./simLottery";
 import { Button } from "./Button";
 import MyWorker from "./worker?worker&inline";
 import { Table } from "./Table";
+import type { Nba2027Restrictions } from "./getProbs.ts";
 
 const presets = [
 	{
@@ -162,8 +163,22 @@ export const App = () => {
 	useEffect(() => {
 		setLoadingProbs(true);
 		requestCount += 1;
-		worker.postMessage({ chances: teams.map((t) => t.chances), numToPick, requestCount });
-	}, [teams, numToPick]);
+
+		let nba2027Restrictions: Nba2027Restrictions | undefined;
+		if (enableNba2027Restrictions) {
+			nba2027Restrictions = {
+				restricted1: [],
+				restricted5: [],
+			};
+		}
+
+		worker.postMessage({
+			chances: teams.map((t) => t.chances),
+			nba2027Restrictions,
+			numToPick,
+			requestCount,
+		});
+	}, [enableNba2027Restrictions, numToPick, teams]);
 
 	useEffect(() => {
 		const listener = (event: any) => {

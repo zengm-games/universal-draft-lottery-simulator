@@ -1,11 +1,10 @@
 const RESTRICTED_1_PICK = 1;
 const RESTRICTED_5_PICK = 5;
 
-type Nba2027Restrictions = {
+export type Nba2027Restrictions = {
 	restricted1: number[];
 	restricted5: number[];
 };
-type DraftType = "nba2027" | "other";
 
 // This just came from testing on my machine to see where it gets slower than 1 second to generate the probabilities. nba2027 basically never triggers this because numEquivalenceClasses is low
 const draftLotteryProbsTooSlow = (numEquivalenceClasses: number, numToPick: number) => {
@@ -98,8 +97,7 @@ class PickIndexes {
 	}
 }
 
-export const simLottery = (
-	draftType: DraftType,
+const simLottery = (
 	chances: number[],
 	numToPick: number,
 	nba2027Restrictions: Nba2027Restrictions | undefined,
@@ -119,15 +117,14 @@ export const simLottery = (
 		: undefined;
 
 	const top12GuaranteedLimit = 12;
-	const top12Guaranteed =
-		draftType === "nba2027"
-			? new Set(
-					teams.slice(0, 3).filter((t) => {
-						// If a team is in riggedLotteryIndexes, then it shouldn't have any guarantee applied to it, in case the user picks something that breaks the guarantee
-						return !riggedLotteryIndexes?.has(t.index);
-					}),
-				)
-			: undefined;
+	const top12Guaranteed = nba2027Restrictions
+		? new Set(
+				teams.slice(0, 3).filter((t) => {
+					// If a team is in riggedLotteryIndexes, then it shouldn't have any guarantee applied to it, in case the user picks something that breaks the guarantee
+					return !riggedLotteryIndexes?.has(t.index);
+				}),
+			)
+		: undefined;
 
 	const selectLotteryWinner = (t: (typeof teams)[number], ignoreRestrictions: boolean) => {
 		pickIndexes.add(t.index, ignoreRestrictions);
@@ -188,7 +185,7 @@ export const simLottery = (
 
 	// Normally follow restrictions. But in some cases, such as rigging the loggery in nba2027 such that a restricted1/restricted5 team can only go in the top 5, you can get in a situation where there are no available teams to be picked. In that situation, we need to ignore nba2027Restrictions.
 	if (riggedLotteryIndexes && nba2027Restrictions) {
-		return simLottery(draftType, chances, numToPick, undefined, riggedLotteryIndexesByPick);
+		return simLottery(chances, numToPick, undefined, riggedLotteryIndexesByPick);
 	}
 
 	for (const t of teams) {
@@ -210,7 +207,6 @@ const sum = (values: number[]) => {
 
 // If it's too slow to calculate the precise probability, just estimate
 const monteCarloLotteryProbs = (
-	draftType: DraftType,
 	chances: number[],
 	numToPick: number,
 	nba2027Restrictions: Nba2027Restrictions | undefined,
@@ -220,7 +216,7 @@ const monteCarloLotteryProbs = (
 	const probs: number[][] = [];
 
 	for (let i = 0; i < ITERATIONS; i++) {
-		const result = simLottery(draftType, chances, numToPick, nba2027Restrictions, undefined);
+		const result = simLottery(chances, numToPick, nba2027Restrictions, undefined);
 		for (let j = 0; j < result.length; j++) {
 			const k = result[j]!;
 			probs[k] ??= [];
@@ -299,11 +295,8 @@ const checkChancesSorted = (chances: number[]) => {
 export const getProbs = (
 	allChances: number[],
 	numToPick: number,
+	nba2027Restrictions: Nba2027Restrictions | undefined,
 ): { tooSlow: boolean; probs?: (number | undefined)[][] } => {
-	// This is to disable the nba2027 restrictions
-	const draftType = "other" as DraftType;
-	const nba2027Restrictions = undefined as Nba2027Restrictions | undefined;
-
 	// Can't guarantee chances are sorted if user edits it
 	const chancesSorted = checkChancesSorted(allChances);
 
@@ -337,7 +330,7 @@ export const getProbs = (
 	let equivalenceClassIdx = 0;
 
 	for (const [i, chances] of allChances.entries()) {
-		const isBottom3 = draftType === "nba2027" && i < 3;
+		const isBottom3 = !!nba2027Restrictions && i < 3;
 		if (isBottom3) {
 			bottom3Mask |= 1n << BigInt(i);
 		}
@@ -380,7 +373,7 @@ export const getProbs = (
 		// Estimate probs
 		return {
 			tooSlow,
-			probs: monteCarloLotteryProbs(draftType, allChances, numToPick, nba2027Restrictions),
+			probs: monteCarloLotteryProbs(allChances, numToPick, nba2027Restrictions),
 		};
 	}
 
@@ -422,7 +415,7 @@ export const getProbs = (
 				continue;
 			}
 
-			if (draftType !== "nba2027" && currentLayer === numToPick) {
+			if (!nba2027Restrictions && currentLayer === numToPick) {
 				// For the later picks, account for how many times each team was "skipped" (lower lottery team won lottery and moved ahead) and keep track of those probabilities
 				const skipped: number[] = new Array(equivalenceClasses.length).fill(0);
 
@@ -476,7 +469,7 @@ export const getProbs = (
 				continue;
 			}
 
-			if (draftType === "nba2027") {
+			if (nba2027Restrictions) {
 				const emptySlots: number[] = [];
 				for (let j = currentPick; j <= 11; j++) {
 					if (!(filledSlotsMask & (1n << BigInt(j)))) {
@@ -559,7 +552,7 @@ export const getProbs = (
 				let targetPick = currentPick;
 				while (true) {
 					const isBanned =
-						draftType === "nba2027" &&
+						!!nba2027Restrictions &&
 						((targetPick === 0 && equivalenceClass.isRestricted1) ||
 							(targetPick <= 4 && equivalenceClass.isRestricted5));
 
