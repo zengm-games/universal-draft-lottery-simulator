@@ -11,6 +11,7 @@ const presets = [
 		description: "Weighted lottery for the top 16 picks, like the NBA since 2027",
 		numToPick: 16,
 		chances: [2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1],
+		enableNba2027Restrictions: true,
 	},
 	{
 		key: "nba2019",
@@ -154,6 +155,9 @@ export const App = () => {
 	const [loadingProbs, setLoadingProbs] = useState(true);
 	const [probs, setProbs] = useState<number[][] | undefined>(); // undefined on initial load only
 	const [tooSlow, setTooSlow] = useState(false);
+	const [enableNba2027Restrictions, setEnableNba2027Restrictions] = useState(
+		preset?.enableNba2027Restrictions ?? false,
+	);
 
 	useEffect(() => {
 		setLoadingProbs(true);
@@ -251,6 +255,7 @@ export const App = () => {
 								setLotteryResults(undefined);
 								setPresetKey(preset.key);
 								setNumToPick(preset.numToPick);
+								setEnableNba2027Restrictions(preset.enableNba2027Restrictions ?? false);
 
 								const chances = preset.chances;
 								let names;
@@ -330,8 +335,15 @@ export const App = () => {
 			<div className="mt-3">
 				<div className="flex gap-2">
 					{addClearButtons("top")}
-					<Button variant="secondary" outline className="mr-2" onClick={() => {}}>
-						Enable 3-2-1 restrictions
+					<Button
+						variant="secondary"
+						outline
+						className="mr-2"
+						onClick={() => {
+							setEnableNba2027Restrictions((x) => !x);
+						}}
+					>
+						{enableNba2027Restrictions ? "Disable" : "Enable"} 3-2-1 restrictions
 					</Button>
 				</div>
 
