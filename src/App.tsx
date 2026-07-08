@@ -9,7 +9,7 @@ const presets = [
 	{
 		key: "nba2027",
 		title: "NBA 2027-present (3-2-1)",
-		description: "Weighted lottery for the top 16 picks, like the NBA since 2027",
+		description: "Weighted lottery for all picks, like the NBA since 2027",
 		numToPick: 16,
 		chances: [2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1],
 		enableNba2027Restrictions: true,
@@ -319,29 +319,31 @@ export const App = () => {
 					</select>
 				</div>
 
-				<div>
-					<label htmlFor="numToPick">
-						<span className="sm:hidden"># Lottery Selections</span>
-						<span className="hidden sm:inline">Number of Lottery Selections</span>
-					</label>
-					<input
-						className="form-control mt-1 h-[42px]"
-						id="numToPick"
-						type="number"
-						value={numToPick}
-						min={0}
-						onChange={(event) => {
-							setLotteryResults(undefined);
-							setPresetKey("custom");
-							const number = (event.target as any).valueAsNumber;
-							if (number < 0) {
-								setNumToPick(0);
-							} else {
-								setNumToPick(Math.round(number));
-							}
-						}}
-					></input>
-				</div>
+				{preset?.enableNba2027Restrictions ? null : (
+					<div>
+						<label htmlFor="numToPick">
+							<span className="sm:hidden"># Lottery Selections</span>
+							<span className="hidden sm:inline">Number of Lottery Selections</span>
+						</label>
+						<input
+							className="form-control mt-1 h-[42px]"
+							id="numToPick"
+							type="number"
+							value={numToPick}
+							min={0}
+							onChange={(event) => {
+								setLotteryResults(undefined);
+								setPresetKey("custom");
+								const number = (event.target as any).valueAsNumber;
+								if (number < 0) {
+									setNumToPick(0);
+								} else {
+									setNumToPick(Math.round(number));
+								}
+							}}
+						></input>
+					</div>
+				)}
 			</div>
 			{preset ? <div className="text-gray-500 mt-1">{preset.description}</div> : null}
 
