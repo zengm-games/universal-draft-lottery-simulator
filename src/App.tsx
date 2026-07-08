@@ -329,7 +329,9 @@ export const App = () => {
 					</select>
 				</div>
 
-				{enableNba2027Restrictions ? null : (
+				{enableNba2027Restrictions ? (
+					<div>&nbsp;</div>
+				) : (
 					<div>
 						<label htmlFor="numToPick">
 							<span className="sm:hidden"># Lottery Selections</span>
