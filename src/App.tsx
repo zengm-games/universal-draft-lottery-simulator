@@ -161,7 +161,7 @@ export const App = () => {
 	const [presetKey, setPresetKey] = useLocalStorageState<PresetKey>("presetKey", "nba2027");
 	const preset = presets.find((preset) => preset.key === presetKey);
 
-	const [numToPick, setNumToPick] = useLocalStorageState("numToPick", preset?.numToPick ?? 0);
+	const [numToPickTemp, setNumToPick] = useLocalStorageState("numToPick", preset?.numToPick ?? 0);
 	const [lotteryResults, setLotteryResults] = useState<number[] | undefined>();
 	const [teams, setTeams] = useLocalStorageState("teams", () => {
 		const allChances = preset?.chances ?? [];
@@ -182,6 +182,8 @@ export const App = () => {
 	const enableNba2027Restrictions = preset
 		? !!preset.enableNba2027Restrictions
 		: presetKey === "customNba2027";
+
+	const numToPick = enableNba2027Restrictions ? teams.length : numToPickTemp;
 
 	useEffect(() => {
 		setLoadingProbs(true);
